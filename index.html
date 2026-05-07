@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>ThunderTools</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 300px;
+      background: radial-gradient(ellipse at top, rgba(79, 70, 229, 0.15), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    header {
+      background: linear-gradient(90deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
+      backdrop-filter: blur(10px);
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(79, 70, 229, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 
+                  0 0 40px rgba(79, 70, 229, 0.1),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      position: relative;
+      z-index: 10;
+    }
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    header h1 { 
+      font-size: 20px; 
+      color: #818cf8; 
+      letter-spacing: 1px; 
+      font-weight: 600;
+      line-height: 1;
+    }
+    .header-subtitle { 
+      font-size: 11px; 
+      color: #6b7280; 
+      font-family: 'Raleway', sans-serif; 
+      font-weight: 500;
+      padding-left: 26px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .system-stats {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 18px;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3),
+                  0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #9ca3af;
+      position: relative;
+    }
+    .stat-item svg {
+      color: #6366f1;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
+    }
+    .stat-label {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 500;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .stat-value {
+      font-family: 'Poppins', monospace;
+      font-weight: 600;
+      font-size: 12px;
+      color: #e0e0e0;
+      min-width: 38px;
+      text-align: right;
+      transition: color 0.3s ease;
+    }
+    .stat-item.clock .stat-value {
+      min-width: 65px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-bar {
+      width: 60px;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+      box-shadow: 0 0 8px currentColor;
+      position: relative;
+    }
+    .stat-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .stat-bar-fill.low { 
+      background: linear-gradient(90deg, #059669, #10b981, #34d399); 
+      color: #10b981; 
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+    .stat-bar-fill.medium { 
+      background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24); 
+      color: #f59e0b; 
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+    }
+    .stat-bar-fill.high { 
+      background: linear-gradient(90deg, #dc2626, #ef4444, #f87171); 
+      color: #ef4444; 
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    }
+    .header-version {
+      font-size: 11px;
+      color: #6b7280;
+      font-family: 'Raleway', sans-serif;
+      font-weight: 500;
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+    .header-version:hover {
+      transform: scale(1.05);
+      border-color: rgba(79, 70, 229, 0.3);
+      color: #a5b4fc;
+    }
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+    .sidebar {
+      width: 200px;
+      background: linear-gradient(180deg, 
+                    rgba(13, 17, 23, 0.7) 0%, 
+                    rgba(17, 24, 39, 0.8) 50%,
+                    rgba(10, 14, 20, 0.7) 100%);
+      backdrop-filter: blur(12px) saturate(180%);
+      padding: 20px 0;
+      border-right: 1px solid rgba(79, 70, 229, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 4px 0 32px rgba(0, 0, 0, 0.4),
+                  inset -1px 0 0 rgba(255, 255, 255, 0.03);
+      position: relative;
+      z-index: 5;
+      animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(180deg, 
+                    transparent 0%,
+                    rgba(79, 70, 229, 0.3) 50%,
+                    transparent 100%);
+      pointer-events: none;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      padding: 12px 20px;
+      margin: 0 8px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: 'Raleway', sans-serif;
+      font-weight: 500;
+      border-radius: 8px;
+      border-left: 3px solid transparent;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .tab-btn::before {
+      content: '';
+      position: absolute;
+      left: -100%;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+                    transparent, 
+                    rgba(79, 70, 229, 0.15), 
+                    transparent);
+      transition: left 0.5s ease;
+    }
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, 
+                    transparent,
+                    #4f46e5,
+                    transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .tab-btn:hover::before { left: 100%; }
+    .tab-btn:hover { 
+      background: rgba(79, 70, 229, 0.08);
+      color: #c7d2fe;
+      border-left-color: rgba(79, 70, 229, 0.3);
+      box-shadow: inset 0 0 20px rgba(79, 70, 229, 0.05);
+      transform: translateX(2px);
+    }
+    .tab-btn:hover svg {
+      color: #818cf8;
+      filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.6));
+      transform: scale(1.1) translateX(2px);
+    }
+    .tab-btn.active { 
+      background: linear-gradient(90deg, 
+                    rgba(79, 70, 229, 0.15) 0%,
+                    rgba(79, 70, 229, 0.08) 100%);
+      color: #a5b4fc;
+      border-left-color: #4f46e5;
+      box-shadow: inset 4px 0 12px rgba(79, 70, 229, 0.2),
+                  0 2px 8px rgba(79, 70, 229, 0.1);
+    }
+    .tab-btn.active::after { opacity: 1; }
+    .tab-btn.active svg { 
+      color: #818cf8;
+      filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.7));
+    }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .tab-content { display: none; padding: 20px; flex-wrap: wrap; gap: 12px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
+    .tab-content.active { display: flex; animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+    .tool-btn {
+      background: linear-gradient(135deg, rgba(31, 41, 55, 0.4) 0%, rgba(17, 24, 39, 0.4) 100%);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #e0e0e0;
+      padding: 18px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      width: calc(50% - 6px);
+      text-align: left;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+                  0 1px 3px rgba(0, 0, 0, 0.2),
+                  0 0 0 1px rgba(255, 255, 255, 0.02),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.03),
+                  inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+      min-height: 72px;
+    }
+    .tool-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+    .tool-btn:hover::before { left: 100%; }
+    .tool-btn:hover {
+      background: linear-gradient(135deg, rgba(38, 51, 71, 0.6) 0%, rgba(31, 41, 55, 0.6) 100%);
+      border-color: rgba(79, 70, 229, 0.4);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4),
+                  0 4px 12px rgba(0, 0, 0, 0.3),
+                  0 0 30px rgba(79, 70, 229, 0.2),
+                  0 0 0 1px rgba(79, 70, 229, 0.3),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                  inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+      transform: translateY(-3px);
+    }
+    .tool-btn:active { 
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+                  0 0 20px rgba(79, 70, 229, 0.1);
+    }
+    .tool-btn .btn-text { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 7px;
+      flex: 1;
+      justify-content: center;
+    }
+    .tool-btn .btn-title { 
+      font-weight: 600; 
+      color: #e8eaed; 
+      font-size: 14px; 
+      line-height: 1.3;
+      letter-spacing: 0.2px;
+    }
+    .tool-btn .btn-desc { 
+      font-size: 11px; 
+      color: #7e8694; 
+      line-height: 1.5; 
+      font-family: 'Raleway', sans-serif; 
+      font-weight: 400;
+      opacity: 0.85;
+    }
+    .tool-btn .btn-icon { 
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6366f1; 
+      transition: all 0.3s ease;
+      filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.3));
+    }
+    .tool-btn .btn-icon img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+    .tool-btn .btn-icon i {
+      width: 22px !important;
+      height: 22px !important;
+    }
+    .tool-btn .btn-favorite {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+    .tool-btn:hover .btn-favorite {
+      opacity: 1;
+    }
+    .tool-btn .btn-favorite.active {
+      opacity: 1;
+      background: rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.4);
+    }
+    .tool-btn .btn-favorite svg {
+      width: 14px;
+      height: 14px;
+      color: #6b7280;
+      transition: all 0.3s ease;
+    }
+    .tool-btn .btn-favorite.active svg {
+      color: #fbbf24;
+      fill: #fbbf24;
+    }
+    .tool-btn .btn-favorite:hover {
+      transform: scale(1.1);
+      background: rgba(251, 191, 36, 0.15);
+    }
+    .history-item {
+      background: linear-gradient(135deg, rgba(31, 41, 55, 0.4) 0%, rgba(17, 24, 39, 0.4) 100%);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+    .history-item:hover {
+      border-color: rgba(79, 70, 229, 0.3);
+      background: linear-gradient(135deg, rgba(38, 51, 71, 0.5) 0%, rgba(31, 41, 55, 0.5) 100%);
+    }
+    .history-item-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(79, 70, 229, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .history-item-icon svg {
+      color: #818cf8;
+      width: 18px;
+      height: 18px;
+    }
+    .history-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .history-item-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e8eaed;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .history-item-time {
+      font-size: 11px;
+      color: #7e8694;
+      font-family: 'Raleway', sans-serif;
+    }
+    .history-item-status {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 500;
+      font-family: 'Raleway', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .history-item-status.success {
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+    .history-item-status.error {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .history-item-status { 
+      min-width: 110px; 
+      display: flex;
+      justify-content: flex-end; 
+      align-items: center; 
+      flex-shrink: 0; 
+      white-space: nowrap;
+      margin-left: auto;
+    }
+
+    /* Modal para input */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .modal {
+      background: linear-gradient(135deg, rgba(30, 35, 55, 0.98) 0%, rgba(20, 25, 45, 0.98) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 16px;
+      padding: 28px 32px;
+      min-width: 420px;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+                  0 0 0 1px rgba(139, 92, 246, 0.2),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e8eaed;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .modal-title svg {
+      color: #818cf8;
+    }
+    .modal-desc {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 24px;
+      font-family: 'Raleway', sans-serif;
+      line-height: 1.6;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 10px;
+      color: #e8eaed;
+      font-size: 14px;
+      font-family: 'Poppins', sans-serif;
+      outline: none;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    .modal-input:focus {
+      border-color: rgba(139, 92, 246, 0.6);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+    .modal-input::placeholder {
+      color: #6b7280;
+    }
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .modal-btn {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Raleway', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+      outline: none;
+    }
+    .modal-btn.primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    .modal-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+    .modal-btn.secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: #9ca3af;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .modal-btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e8eaed;
+    }
+    .tool-btn:hover .btn-icon { 
+      color: #818cf8;
+      filter: drop-shadow(0 0 12px rgba(129, 140, 248, 0.5));
+      transform: scale(1.1);
+    }
+    .tool-btn.danger { 
+      border-color: rgba(239, 68, 68, 0.2);
+      background: linear-gradient(135deg, rgba(45, 16, 16, 0.4) 0%, rgba(31, 10, 10, 0.4) 100%);
+    }
+    .tool-btn.danger .btn-icon { color: #f87171; filter: drop-shadow(0 0 8px rgba(248, 113, 113, 0.3)); }
+    .tool-btn.danger:hover {
+      background: linear-gradient(135deg, rgba(45, 16, 16, 0.7) 0%, rgba(31, 10, 10, 0.7) 100%);
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4),
+                  0 0 30px rgba(239, 68, 68, 0.2),
+                  0 0 0 1px rgba(239, 68, 68, 0.4),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+    .tool-btn.danger:hover .btn-icon { color: #fca5a5; }
+    .tab-btn { display: flex; align-items: center; gap: 8px; }
+    .tab-btn.active svg { 
+      color: #818cf8;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.6)); }
+      50% { filter: drop-shadow(0 0 12px rgba(129, 140, 248, 0.9)); }
+    }
+    .tab-btn svg { 
+      color: #6b7280;
+      flex-shrink: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tab-btn:hover svg { color: #e0e0e0; }
+    header svg { color: #818cf8; }
+    .toast-icon svg { display: block; }
+    .output-area {
+      background: #0a0a0a;
+      border-top: 1px solid #1f2937;
+      padding: 12px 20px;
+      height: 140px;
+      overflow-y: auto;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+    }
+    .output-area .log { margin-bottom: 4px; }
+    .output-area .log.success { color: #4ade80; }
+    .output-area .log.error { color: #f87171; }
+    .output-area .log.info { color: #60a5fa; }
+    /* Toast flutuante */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast {
+      background: linear-gradient(135deg, #1e2433 0%, #1a1f2e 100%);
+      border: 1.5px solid #374151;
+      border-radius: 12px;
+      padding: 16px 18px;
+      min-width: 320px;
+      max-width: 480px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6),
+                  0 4px 12px rgba(0,0,0,0.4),
+                  0 0 0 1px rgba(255,255,255,0.05),
+                  inset 0 1px 0 rgba(255,255,255,0.08),
+                  inset 0 -1px 0 rgba(0,0,0,0.3);
+      pointer-events: all;
+      animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .toast.expanded {
+      max-width: 520px;
+      max-height: 420px;
+    }
+    .toast.expanded .toast-msg {
+      max-height: 340px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    .toast.expanded .toast-msg::-webkit-scrollbar {
+      width: 6px;
+    }
+    .toast.expanded .toast-msg::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+      border-radius: 3px;
+    }
+    .toast.expanded .toast-msg::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 3px;
+    }
+    .toast.expanded .toast-msg::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.25);
+    }
+    .toast.hide { opacity: 0; transform: translateX(100%) scale(0.95); }
+    .toast-icon {
+      font-size: 22px;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .toast.loading .toast-icon .spinner {
+      animation: spin 1s linear infinite;
+    }
+    .toast-body { flex: 1; min-width: 0; }
+    .toast-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .toast-msg {
+      font-size: 11.5px;
+      color: #b4bac5;
+      line-height: 1.7;
+      word-break: break-word;
+      font-family: 'Raleway', sans-serif;
+      font-weight: 400;
+    }
+    .toast-msg b { color: #e8eaed; font-weight: 600; }
+    .toast-close {
+      background: none;
+      border: none;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+      align-self: flex-start;
+      transition: color 0.15s ease, transform 0.15s ease;
+    }
+    .toast-close:hover { color: #e0e0e0; transform: scale(1.15); }
+    .toast-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      border-radius: 0 0 12px 12px;
+      animation: shrink linear forwards;
+      will-change: width;
+    }
+    
+    /* Loading (azul/roxo) */
+    .toast.loading {
+      border-color: rgba(79, 70, 229, 0.4);
+      background: linear-gradient(135deg, rgba(30, 37, 64, 0.95) 0%, rgba(26, 31, 53, 0.95) 100%);
+      box-shadow: 0 12px 40px rgba(79,70,229,0.25),
+                  0 4px 12px rgba(0,0,0,0.4),
+                  0 0 30px rgba(79,70,229,0.15),
+                  0 0 0 1px rgba(79,70,229,0.3),
+                  inset 0 1px 0 rgba(139,92,246,0.15),
+                  inset 0 -1px 0 rgba(0,0,0,0.3);
+    }
+    .toast.loading .toast-bar {
+      background: linear-gradient(90deg, #4f46e5, #6366f1, #818cf8);
+      animation-duration: 999s;
+      width: 100%;
+    }
+    .toast.loading .toast-title { color: #c7d2fe; }
+    
+    /* Success (verde) */
+    .toast.success {
+      border-color: rgba(34, 197, 94, 0.35);
+      background: linear-gradient(135deg, rgba(15, 41, 34, 0.95) 0%, rgba(10, 31, 26, 0.95) 100%);
+      box-shadow: 0 12px 40px rgba(34,197,94,0.2),
+                  0 4px 12px rgba(0,0,0,0.4),
+                  0 0 30px rgba(34,197,94,0.12),
+                  0 0 0 1px rgba(34,197,94,0.25),
+                  inset 0 1px 0 rgba(74,222,128,0.12),
+                  inset 0 -1px 0 rgba(0,0,0,0.3);
+    }
+    .toast.success .toast-bar {
+      background: linear-gradient(90deg, #16a34a, #22c55e, #4ade80);
+    }
+    .toast.success .toast-title { color: #86efac; }
+    
+    /* Error (vermelho) */
+    .toast.error {
+      border-color: rgba(239, 68, 68, 0.35);
+      background: linear-gradient(135deg, rgba(45, 16, 16, 0.95) 0%, rgba(31, 10, 10, 0.95) 100%);
+      box-shadow: 0 12px 40px rgba(239,68,68,0.25),
+                  0 4px 12px rgba(0,0,0,0.4),
+                  0 0 30px rgba(239,68,68,0.15),
+                  0 0 0 1px rgba(239,68,68,0.3),
+                  inset 0 1px 0 rgba(248,113,113,0.12),
+                  inset 0 -1px 0 rgba(0,0,0,0.3);
+    }
+    .toast.error .toast-bar {
+      background: linear-gradient(90deg, #dc2626, #ef4444, #f87171);
+    }
+    .toast.error .toast-title { color: #fca5a5; }
+    
+    /* Warning (amarelo/laranja) */
+    .toast.warning {
+      border-color: rgba(245, 158, 11, 0.35);
+      background: linear-gradient(135deg, rgba(45, 36, 16, 0.95) 0%, rgba(31, 26, 10, 0.95) 100%);
+      box-shadow: 0 12px 40px rgba(245,158,11,0.25),
+                  0 4px 12px rgba(0,0,0,0.4),
+                  0 0 30px rgba(245,158,11,0.15),
+                  0 0 0 1px rgba(245,158,11,0.3),
+                  inset 0 1px 0 rgba(251,191,36,0.12),
+                  inset 0 -1px 0 rgba(0,0,0,0.3);
+    }
+    .toast.warning .toast-bar {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24, #fcd34d);
+    }
+    .toast.warning .toast-title { color: #fde68a; }
+    
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2.5px solid #4f46e5;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(100%) scale(0.95); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes shrink { from { width: 100%; } to { width: 0%; } }
+
+    /* Status Bar Inferior */
+    .status-bar {
+      position: fixed;
+      bottom: -70px;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(90deg, #0d1117 0%, #161b22 100%);
+      border-top: 1px solid rgba(79, 70, 229, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 1000;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+    }
+    .status-bar.visible { bottom: 0; }
+    .status-info { display: flex; align-items: center; gap: 14px; color: #e8eaed; font-size: 13px; font-weight: 500; font-family: 'Raleway', sans-serif; }
+    .cancel-btn {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cancel-btn:hover { background: rgba(239, 68, 68, 0.2); transform: translateY(-2px); border-color: rgba(239, 68, 68, 0.5); }
+
+    /* Tema Claro */
+    body[data-theme="light"] {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #f0f3f7 100%);
+      color: #1a1a1a;
+    }
+    body[data-theme="light"]::before {
+      background: radial-gradient(ellipse at top, rgba(79, 70, 229, 0.08), transparent 70%);
+    }
+    body[data-theme="light"] header {
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+      border-bottom-color: rgba(79, 70, 229, 0.2);
+    }
+    body[data-theme="light"] .sidebar {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.95) 50%, rgba(255, 255, 255, 0.9) 100%);
+      border-right-color: rgba(79, 70, 229, 0.15);
+    }
+    body[data-theme="light"] .tab-btn {
+      color: #4b5563;
+    }
+    body[data-theme="light"] .tab-btn:hover {
+      color: #4f46e5;
+      background: rgba(79, 70, 229, 0.08);
+    }
+    body[data-theme="light"] .tab-btn.active {
+      color: #4f46e5;
+      background: linear-gradient(90deg, rgba(79, 70, 229, 0.12) 0%, rgba(79, 70, 229, 0.06) 100%);
+    }
+    body[data-theme="light"] .tool-btn {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%);
+      border-color: rgba(0, 0, 0, 0.08);
+      color: #1a1a1a;
+    }
+    body[data-theme="light"] .tool-btn .btn-title {
+      color: #1a1a1a;
+    }
+    body[data-theme="light"] .tool-btn .btn-desc {
+      color: #6b7280;
+    }
+    body[data-theme="light"] .tool-btn:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+    body[data-theme="light"] .toast {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+    body[data-theme="light"] .toast-msg {
+      color: #4b5563;
+    }
+    body[data-theme="light"] .history-item {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%);
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+    body[data-theme="light"] .history-item-title {
+      color: #1a1a1a;
+    }
+    body[data-theme="light"] .history-item-time {
+      color: #6b7280;
+    }
+    body[data-theme="light"] .modal {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+    body[data-theme="light"] .modal-title {
+      color: #1a1a1a;
+    }
+    body[data-theme="light"] .modal-desc {
+      color: #6b7280;
+    }
+    body[data-theme="light"] .modal-input {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(79, 70, 229, 0.2);
+      color: #1a1a1a;
+    }
+    body[data-theme="light"] .modal-input:focus {
+      background: rgba(0, 0, 0, 0.08);
+      border-color: rgba(79, 70, 229, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1><i data-lucide="zap" style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:6px"></i>ThunderTools</h1>
+      <span class="header-subtitle">Ferramentas de Manutenção Windows</span>
+    </div>
+    <div class="header-right">
+      <div class="system-stats">
+        <div class="stat-item">
+          <i data-lucide="cpu" style="width:14px;height:14px"></i>
+          <span class="stat-label">CPU</span>
+          <span class="stat-value" id="cpu-usage">—</span>
+          <div class="stat-bar"><div class="stat-bar-fill low" id="cpu-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-item">
+          <i data-lucide="memory-stick" style="width:14px;height:14px"></i>
+          <span class="stat-label">RAM</span>
+          <span class="stat-value" id="ram-usage">—</span>
+          <div class="stat-bar"><div class="stat-bar-fill low" id="ram-bar" style="width:0%"></div></div>
+        </div>
+        <div class="stat-item clock">
+          <i data-lucide="clock" style="width:14px;height:14px"></i>
+          <span class="stat-value" id="clock">00:00:00</span>
+        </div>
+      </div>
+      <div class="header-version">v1.1.0</div>
+      <button id="theme-toggle" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: all 0.3s ease;" title="Alternar tema">
+        <i data-lucide="sun" style="width:16px;height:16px;color:#fbbf24;"></i>
+      </button>
+    </div>
+  </header>
+  <div class="container">
+    <nav class="sidebar">
+      <button class="tab-btn active" data-tab="impressao"><i data-lucide="printer" style="width:15px;height:15px"></i> Impressão</button>
+      <button class="tab-btn" data-tab="atualizacao"><i data-lucide="refresh-cw" style="width:15px;height:15px"></i> Windows Update</button>
+      <button class="tab-btn" data-tab="desempenho"><i data-lucide="zap" style="width:15px;height:15px"></i> Desempenho</button>
+      <button class="tab-btn" data-tab="disco"><i data-lucide="hard-drive" style="width:15px;height:15px"></i> Disco</button>
+      <button class="tab-btn" data-tab="rede"><i data-lucide="globe" style="width:15px;height:15px"></i> Rede</button>
+      <button class="tab-btn" data-tab="sistema"><i data-lucide="settings" style="width:15px;height:15px"></i> Sistema</button>
+      <button class="tab-btn" data-tab="seguranca"><i data-lucide="shield" style="width:15px;height:15px"></i> Segurança</button>
+      <button class="tab-btn" data-tab="avancado"><i data-lucide="terminal" style="width:15px;height:15px"></i> Avançado</button>
+      <button class="tab-btn" data-tab="programas"><i data-lucide="package" style="width:15px;height:15px"></i> Programas</button>
+      <div style="margin-top: auto; padding: 12px 0; border-top: 1px solid rgba(79, 70, 229, 0.15); display: flex; flex-direction: column; gap: 4px;">
+        <button class="tab-btn" data-tab="historico"><i data-lucide="history" style="width:15px;height:15px"></i> Histórico</button>
+        <button class="tab-btn" data-tab="favoritos"><i data-lucide="star" style="width:15px;height:15px"></i> Favoritos</button>
+      </div>
+    </nav>
+    <div class="main">
+
+      <!-- PROGRAMAS -->
+      <div class="tab-content" id="tab-programas">
+        <button class="tool-btn" data-cmd="winget install --id Google.Chrome -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/google-chrome.png" alt="Chrome"></span>
+          <span class="btn-text">
+            <span class="btn-title">Google Chrome</span>
+            <span class="btn-desc">Navegador Web da Google</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id RARLab.WinRAR -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/winrar.png" alt="WinRAR"></span>
+          <span class="btn-text">
+            <span class="btn-title">WinRAR</span>
+            <span class="btn-desc">Compressor de arquivos profissional</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id 7zip.7zip -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/7zip.png" alt="7-Zip"></span>
+          <span class="btn-text">
+            <span class="btn-title">7-Zip</span>
+            <span class="btn-desc">Alternativa open-source leve</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id VideoLAN.VLC -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/vlc.png" alt="VLC"></span>
+          <span class="btn-text">
+            <span class="btn-title">VLC Media Player</span>
+            <span class="btn-desc">Reprodutor de vídeo universal</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id Microsoft.VisualStudioCode -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/vscode.png" alt="VS Code"></span>
+          <span class="btn-text">
+            <span class="btn-title">VS Code</span>
+            <span class="btn-desc">Editor de código profissional</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id Spotify.Spotify -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/spotify.png" alt="Spotify"></span>
+          <span class="btn-text">
+            <span class="btn-title">Spotify</span>
+            <span class="btn-desc">Streaming de música</span>
+          </span>
+        </button>
+      </div>
+
+      <!-- IMPRESSÃO -->
+      <div class="tab-content active" id="tab-impressao">
+        <button class="tool-btn" data-cmd="net stop spooler & del /Q /F /S %systemroot%\System32\spool\PRINTERS\* & net start spooler">
+          <span class="btn-icon"><i data-lucide="trash-2" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Limpar Fila de Impressão</span><span class="btn-desc">Para o spooler, apaga os jobs e reinicia</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="net stop spooler & net start spooler">
+          <span class="btn-icon"><i data-lucide="refresh-cw" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Reiniciar Spooler</span><span class="btn-desc">Reinicia o serviço de spooler de impressão</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="sc query spooler">
+          <span class="btn-icon"><i data-lucide="activity" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Status do Spooler</span><span class="btn-desc">Verifica o estado atual do serviço</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-Printer | Select-Object Name, DriverName, PortName | Format-Table -AutoSize&quot;">
+          <span class="btn-icon"><i data-lucide="printer" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Listar Impressoras</span><span class="btn-desc">Lista todas as impressoras instaladas</span></span>
+        </button>
+      </div>
+
+      <!-- WINDOWS UPDATE -->
+      <div class="tab-content" id="tab-atualizacao">
+        <button class="tool-btn" data-cmd="net stop wuauserv & net stop cryptSvc & net stop bits & net stop msiserver & ren C:\Windows\SoftwareDistribution SoftwareDistribution.old & ren C:\Windows\System32\catroot2 catroot2.old & net start wuauserv & net start cryptSvc & net start bits & net start msiserver">
+          <span class="btn-icon"><i data-lucide="wrench" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Resetar Windows Update</span><span class="btn-desc">Para serviços, renomeia cache e reinicia</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="net stop wuauserv & net stop bits & net start wuauserv & net start bits">
+          <span class="btn-icon"><i data-lucide="refresh-cw" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Reiniciar Serviços Update</span><span class="btn-desc">Reinicia wuauserv e bits</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="sc query wuauserv & sc query bits">
+          <span class="btn-icon"><i data-lucide="activity" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Status dos Serviços</span><span class="btn-desc">Verifica wuauserv e bits</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="wuauclt /detectnow & wuauclt /updatenow">
+          <span class="btn-icon"><i data-lucide="search" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Forçar Verificação</span><span class="btn-desc">Força detecção e download de atualizações</span></span>
+        </button>
+      </div>
+
+      <!-- DESEMPENHO -->
+      <div class="tab-content" id="tab-desempenho">
+        <button class="tool-btn" data-cmd="ipconfig /flushdns">
+          <span class="btn-icon"><i data-lucide="wind" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Limpar Cache DNS</span><span class="btn-desc">Limpa o cache de resolução DNS</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c">
+          <span class="btn-icon"><i data-lucide="zap" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Modo Alto Desempenho</span><span class="btn-desc">Ativa o plano de energia máximo</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="cleanmgr /sagerun:1">
+          <span class="btn-icon"><i data-lucide="trash" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Limpeza de Disco</span><span class="btn-desc">Executa o limpador de disco do Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="tasklist /fo table | more">
+          <span class="btn-icon"><i data-lucide="list" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Processos Ativos</span><span class="btn-desc">Lista todos os processos em execução</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, Manufacturer | Format-Table -AutoSize&quot;">
+          <span class="btn-icon"><i data-lucide="cpu" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Info de Memória RAM</span><span class="btn-desc">Exibe detalhes dos módulos de RAM</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powercfg /energy /output %USERPROFILE%\Desktop\energy_report.html & echo Relatório salvo na Área de Trabalho">
+          <span class="btn-icon"><i data-lucide="battery" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Relatório de Energia</span><span class="btn-desc">Gera relatório de consumo energético</span></span>
+        </button>
+      </div>
+
+      <!-- DISCO -->
+      <div class="tab-content" id="tab-disco">
+        <button class="tool-btn" data-cmd="sfc /scannow">
+          <span class="btn-icon"><i data-lucide="shield-check" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">SFC - Verificar Arquivos</span><span class="btn-desc">Verifica e repara arquivos do sistema</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="DISM /Online /Cleanup-Image /RestoreHealth">
+          <span class="btn-icon"><i data-lucide="wrench" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">DISM - Reparar Imagem</span><span class="btn-desc">Repara a imagem do Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="chkdsk C: /f /r /x">
+          <span class="btn-icon"><i data-lucide="hard-drive" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">CHKDSK - Verificar Disco</span><span class="btn-desc">Agenda verificação do disco C: na reinicialização</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="defrag C: /U /V">
+          <span class="btn-icon"><i data-lucide="layers" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Desfragmentar C:</span><span class="btn-desc">Desfragmenta o disco C: (HDDs)</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_DiskDrive | Select-Object Model, @{Name='Size';Expression={[math]::Round($_.Size/1GB,1)}}, Status | Format-Table -AutoSize&quot;">
+          <span class="btn-icon"><i data-lucide="database" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Info dos Discos</span><span class="btn-desc">Lista modelos e status dos discos</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-PSDrive C | Select-Object @{Name='Usado';Expression={[math]::Round($_.Used/1GB,1)}}, @{Name='Livre';Expression={[math]::Round($_.Free/1GB,1)}}, @{Name='Total';Expression={[math]::Round(($_.Used+$_.Free)/1GB,1)}} | Format-List&quot;">
+          <span class="btn-icon"><i data-lucide="pie-chart" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Espaço Livre em C:</span><span class="btn-desc">Mostra espaço disponível no disco C:</span></span>
+        </button>
+      </div>
+
+      <!-- REDE -->
+      <div class="tab-content" id="tab-rede">
+        <button class="tool-btn" data-cmd="netsh winsock reset & netsh int ip reset">
+          <span class="btn-icon"><i data-lucide="rotate-ccw" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Resetar Winsock/TCP</span><span class="btn-desc">Reseta configurações de rede (requer reinício)</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="cmdkey /list & for /f &quot;tokens=1,2 delims= &quot; %G in ('cmdkey /list ^| findstr Target') do cmdkey /delete:%H">
+          <span class="btn-icon"><i data-lucide="key-round" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Limpar Credenciais de Rede</span><span class="btn-desc">Remove senhas e credenciais antigas armazenadas</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="ipconfig /all">
+          <span class="btn-icon"><i data-lucide="network" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Info de Rede</span><span class="btn-desc">Exibe todas as configurações de rede</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="ipconfig /release & ipconfig /renew">
+          <span class="btn-icon"><i data-lucide="arrow-left-right" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Renovar IP</span><span class="btn-desc">Libera e renova o endereço IP</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="ping -n 4 8.8.8.8">
+          <span class="btn-icon"><i data-lucide="radio" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Testar Conexão</span><span class="btn-desc">Ping para o DNS do Google</span></span>
+        </button>
+      </div>
+
+      <!-- SISTEMA -->
+      <div class="tab-content" id="tab-sistema">
+        <button class="tool-btn" data-cmd="systeminfo">
+          <span class="btn-icon"><i data-lucide="monitor" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Informações do Sistema</span><span class="btn-desc">Exibe detalhes completos do sistema</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="w32tm /resync /force">
+          <span class="btn-icon"><i data-lucide="clock" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Sincronizar Data/Hora</span><span class="btn-desc">Ajusta data e hora automaticamente via internet</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_BIOS | Select-Object Manufacturer, SerialNumber, SMBIOSBIOSVersion | Format-List&quot;">
+          <span class="btn-icon"><i data-lucide="key" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Info da BIOS</span><span class="btn-desc">Número de série e versão da BIOS</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey&quot;">
+          <span class="btn-icon"><i data-lucide="key-round" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Chave do Windows</span><span class="btn-desc">Exibe a chave de produto original</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="net user">
+          <span class="btn-icon"><i data-lucide="user" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Usuários do Sistema</span><span class="btn-desc">Lista contas de usuário locais</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="gpupdate /force">
+          <span class="btn-icon"><i data-lucide="refresh-ccw" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Forçar Group Policy</span><span class="btn-desc">Atualiza políticas de grupo</span></span>
+        </button>
+        <button class="tool-btn danger" data-cmd="shutdown /r /t 30 /c &quot;Reiniciando via ThunderTools&quot;">
+          <span class="btn-icon"><i data-lucide="power" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Reiniciar em 30s</span><span class="btn-desc">Agenda reinicialização do sistema</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="shutdown /a">
+          <span class="btn-icon"><i data-lucide="x-circle" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Cancelar Reinício</span><span class="btn-desc">Cancela reinicialização agendada</span></span>
+        </button>
+      </div>
+
+      <!-- SEGURANÇA -->
+      <div class="tab-content" id="tab-seguranca">
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Start-MpScan -ScanType QuickScan&quot;">
+          <span class="btn-icon"><i data-lucide="shield-check" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Scan Rápido Defender</span><span class="btn-desc">Executa verificação rápida de vírus</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Update-MpSignature&quot;">
+          <span class="btn-icon"><i data-lucide="download" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Atualizar Defender</span><span class="btn-desc">Atualiza definições de vírus</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="netsh advfirewall show allprofiles">
+          <span class="btn-icon"><i data-lucide="shield" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Status do Firewall</span><span class="btn-desc">Verifica estado do firewall do Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher | Where-Object {$_.DisplayName} | Sort-Object DisplayName | Format-Table -AutoSize&quot;">
+          <span class="btn-icon"><i data-lucide="package" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Programas Instalados</span><span class="btn-desc">Lista todos os programas instalados</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="netstat -ano | findstr LISTENING">
+          <span class="btn-icon"><i data-lucide="network" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Portas Abertas</span><span class="btn-desc">Lista portas em escuta no sistema</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="netstat -ano">
+          <span class="btn-icon"><i data-lucide="activity" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Conexões Ativas</span><span class="btn-desc">Mostra todas as conexões de rede ativas</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="RENAME_ADMIN" data-special="rename-admin">
+          <span class="btn-icon"><i data-lucide="user-cog" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Renomear Administrador</span><span class="btn-desc">Altera o nome da conta Administrador</span></span>
+        </button>
+      </div>
+
+      <!-- AVANÇADO -->
+      <div class="tab-content" id="tab-avancado">
+        <button class="tool-btn" data-cmd="del /q/f/s %TEMP%\* & del /q/f/s C:\Windows\Temp\* & del /q/f/s C:\Windows\Prefetch\*">
+          <span class="btn-icon"><i data-lucide="trash-2" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Limpar Arquivos Temporários</span><span class="btn-desc">Remove temp, prefetch e cache do Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_StartupCommand | Select-Object Name, Command, Location | Format-Table -AutoSize&quot;">
+          <span class="btn-icon"><i data-lucide="play-circle" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Programas de Inicialização</span><span class="btn-desc">Lista programas que iniciam com o Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="netsh interface ipv4 set dns name=&quot;Ethernet&quot; static 8.8.8.8 primary & netsh interface ipv4 add dns name=&quot;Ethernet&quot; 8.8.4.4 index=2">
+          <span class="btn-icon"><i data-lucide="globe" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">DNS Google (Ethernet)</span><span class="btn-desc">Configura DNS 8.8.8.8 e 8.8.4.4</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="netsh interface ipv4 set dns name=&quot;Wi-Fi&quot; static 1.1.1.1 primary & netsh interface ipv4 add dns name=&quot;Wi-Fi&quot; 1.0.0.1 index=2">
+          <span class="btn-icon"><i data-lucide="wifi" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">DNS Cloudflare (Wi-Fi)</span><span class="btn-desc">Configura DNS 1.1.1.1 e 1.0.0.1</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_DiskDrive | Get-CimAssociatedInstance -ResultClassName Win32_DiskDriveToDiskPartition | Get-CimAssociatedInstance -ResultClassName Win32_LogicalDiskToPartition | Get-CimAssociatedInstance -ResultClassName Win32_LogicalDisk | Select-Object DeviceID, @{Name='SizeGB';Expression={[math]::Round($_.Size/1GB,1)}}, @{Name='FreeGB';Expression={[math]::Round($_.FreeSpace/1GB,1)}} | Format-Table -AutoSize&quot;">
+          <span class="btn-icon"><i data-lucide="hard-drive" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Saúde dos Discos</span><span class="btn-desc">Verifica status e espaço de todos os discos</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="DISM /Online /Cleanup-Image /StartComponentCleanup /ResetBase">
+          <span class="btn-icon"><i data-lucide="package-x" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Limpar WinSxS</span><span class="btn-desc">Remove componentes antigos do Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Optimize-Volume -DriveLetter C -ReTrim -Verbose&quot;">
+          <span class="btn-icon"><i data-lucide="zap" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Otimizar SSD (TRIM)</span><span class="btn-desc">Executa comando TRIM no SSD</span></span>
+        </button>
+        <button class="tool-btn danger" data-cmd="powershell -Command &quot;Checkpoint-Computer -Description 'ThunderTools Restore Point' -RestorePointType 'MODIFY_SETTINGS'&quot;">
+          <span class="btn-icon"><i data-lucide="save" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Criar Ponto de Restauração</span><span class="btn-desc">Cria backup do estado atual do sistema</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="CUSTOM_MESSAGE" data-special="custom-message">
+          <span class="btn-icon"><i data-lucide="message-square" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Mensagem Personalizada</span><span class="btn-desc">Exibe mensagem customizada na tela</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="RENAME_PC" data-special="rename-pc">
+          <span class="btn-icon"><i data-lucide="monitor" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Renomear Computador</span><span class="btn-desc">Altera o nome do computador na rede</span></span>
+        </button>
+      </div>
+
+      <!-- HISTÓRICO -->
+      <div class="tab-content" id="tab-historico" style="flex-direction: column; flex-wrap: nowrap; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; width: 100%;">
+          <h2 style="font-size: 18px; color: #e8eaed; font-weight: 600;">Histórico de Comandos</h2>
+          <button id="clear-history" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: 'Raleway', sans-serif; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="trash-2" style="width:14px;height:14px"></i>Limpar Histórico
+          </button>
+        </div>
+        <div id="history-list" style="display: flex; flex-direction: column; gap: 8px; width: 100%;"></div>
+      </div>
+
+      <!-- FAVORITOS -->
+      <div class="tab-content" id="tab-favoritos">
+        <div style="margin-bottom: 16px; width: 100%;">
+          <h2 style="font-size: 18px; color: #e8eaed; font-weight: 600; margin-bottom: 8px;">Ferramentas Favoritas</h2>
+          <p style="font-size: 12px; color: #7e8694; font-family: 'Raleway', sans-serif;">Clique na estrela ⭐ em qualquer ferramenta para adicionar aos favoritos</p>
+        </div>
+        <div id="favorites-list" style="display: flex; flex-wrap: wrap; gap: 12px; width: 100%;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="status-bar" class="status-bar">
+    <div class="status-info">
+      <div class="spinner" style="width: 18px; height: 18px; border-width: 2.5px;"></div>
+      <span id="status-text">Executando tarefa complexa...</span>
+    </div>
+    <button id="cancel-btn" class="cancel-btn"><i data-lucide="square" style="width:14px;height:14px"></i> Parar Execução</button>
+  </div>
+
+  <div id="toast-container"></div>
+  <script>lucide.createIcons()</script>
+  <script src="renderer.js"></script>
+</body>
+</html>
