@@ -3,12 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <title>ThunderTools</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="assets/vendor/lucide.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      color-scheme: dark;
+      --scrollbar-size: 10px;
+      --scrollbar-track: rgba(8, 8, 12, 0.46);
+      --scrollbar-track-border: rgba(255, 255, 255, 0.05);
+      --scrollbar-thumb-color: #6366f1;
+      --scrollbar-thumb: linear-gradient(180deg, rgba(129, 140, 248, 0.92), rgba(79, 70, 229, 0.86));
+      --scrollbar-thumb-hover: linear-gradient(180deg, rgba(167, 139, 250, 0.96), rgba(99, 102, 241, 0.94));
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track);
+    }
+
+    *::-webkit-scrollbar {
+      width: var(--scrollbar-size);
+      height: var(--scrollbar-size);
+    }
+
+    *::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+      border: 1px solid var(--scrollbar-track-border);
+      border-radius: 999px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      background-clip: padding-box;
+      border: 2px solid transparent;
+      border-radius: 999px;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.24);
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+      background: var(--scrollbar-thumb-hover);
+      background-clip: padding-box;
+    }
+
+    *::-webkit-scrollbar-corner {
+      background: transparent;
+    }
 
     @keyframes fadeIn {
       from { opacity: 0; }
@@ -25,7 +66,7 @@
     }
 
     body {
-      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
       background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
       color: #e0e0e0;
       display: flex;
@@ -124,10 +165,6 @@
       min-width: 38px;
       text-align: right;
       transition: color 0.3s ease;
-    }
-    .stat-item.clock .stat-value {
-      min-width: 65px;
-      font-variant-numeric: tabular-nums;
     }
 
     .stat-bar {
@@ -494,9 +531,15 @@
       border-radius: 6px;
       font-weight: 500;
       font-family: 'Raleway', sans-serif;
-      display: flex;
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
+      flex-shrink: 0;
+      margin-left: auto;
+      white-space: nowrap;
+      line-height: 1.2;
+      width: fit-content;
     }
     .history-item-status.success {
       background: rgba(34, 197, 94, 0.15);
@@ -508,16 +551,6 @@
       color: #fca5a5;
       border: 1px solid rgba(239, 68, 68, 0.25);
     }
-    .history-item-status { 
-      min-width: 110px; 
-      display: flex;
-      justify-content: flex-end; 
-      align-items: center; 
-      flex-shrink: 0; 
-      white-space: nowrap;
-      margin-left: auto;
-    }
-
     /* Modal para input */
     .modal-overlay {
       position: fixed;
@@ -541,6 +574,8 @@
       padding: 28px 32px;
       min-width: 420px;
       max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
                   0 0 0 1px rgba(139, 92, 246, 0.2),
                   inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -590,6 +625,7 @@
       display: flex;
       gap: 12px;
       justify-content: flex-end;
+      flex-wrap: wrap;
     }
     .modal-btn {
       padding: 10px 24px;
@@ -709,20 +745,6 @@
       max-height: 340px;
       overflow-y: auto;
       padding-right: 8px;
-    }
-    .toast.expanded .toast-msg::-webkit-scrollbar {
-      width: 6px;
-    }
-    .toast.expanded .toast-msg::-webkit-scrollbar-track {
-      background: rgba(0,0,0,0.2);
-      border-radius: 3px;
-    }
-    .toast.expanded .toast-msg::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.15);
-      border-radius: 3px;
-    }
-    .toast.expanded .toast-msg::-webkit-scrollbar-thumb:hover {
-      background: rgba(255,255,255,0.25);
     }
     .toast.hide { opacity: 0; transform: translateX(100%) scale(0.95); }
     .toast-icon {
@@ -848,12 +870,364 @@
       animation: spin 0.65s linear infinite;
       flex-shrink: 0;
     }
+
+    /* Refinamento visual das notificacoes */
+    #toast-container {
+      gap: 10px;
+    }
+    .toast {
+      --toast-accent: #818cf8;
+      --toast-accent-soft: rgba(129, 140, 248, 0.16);
+      background: linear-gradient(145deg, rgba(20, 25, 38, 0.96) 0%, rgba(12, 17, 28, 0.98) 100%);
+      backdrop-filter: blur(18px) saturate(160%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid var(--toast-accent);
+      border-radius: 10px;
+      padding: 14px 14px 15px;
+      min-width: 340px;
+      max-width: 500px;
+      gap: 12px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.42),
+                  0 8px 18px rgba(0,0,0,0.28),
+                  0 0 0 1px rgba(255,255,255,0.035),
+                  inset 0 1px 0 rgba(255,255,255,0.08);
+      animation: slideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.22s ease, transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+    }
+    .toast::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 24px 20px, var(--toast-accent-soft), transparent 42%),
+                  linear-gradient(180deg, rgba(255,255,255,0.055), transparent 38%);
+      opacity: 0.9;
+      pointer-events: none;
+    }
+    .toast::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.24), transparent);
+      pointer-events: none;
+    }
+    .toast:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.14);
+      box-shadow: 0 22px 55px rgba(0,0,0,0.48),
+                  0 10px 22px rgba(0,0,0,0.3),
+                  0 0 0 1px rgba(255,255,255,0.05),
+                  inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .toast.hide {
+      opacity: 0;
+      transform: translateX(100%) scale(0.96);
+    }
+    .toast-icon {
+      width: 36px;
+      height: 36px;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9px;
+      background: var(--toast-accent-soft);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08),
+                  0 8px 22px var(--toast-accent-soft);
+      position: relative;
+      z-index: 1;
+    }
+    .toast-icon svg {
+      width: 20px;
+      height: 20px;
+      filter: drop-shadow(0 0 8px var(--toast-accent-soft));
+    }
+    .toast-body {
+      position: relative;
+      z-index: 1;
+      padding-top: 1px;
+    }
+    .toast-title {
+      font-size: 13px;
+      font-weight: 650;
+      margin-bottom: 5px;
+      color: #f3f4f6;
+      letter-spacing: 0;
+    }
+    .toast-msg {
+      font-size: 12px;
+      color: #aeb6c4;
+      line-height: 1.6;
+    }
+    .toast-msg .notification-inline-icon {
+      width: 13px;
+      height: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--toast-accent);
+      margin-right: 4px;
+      vertical-align: -1.5px;
+      line-height: 1;
+    }
+    .toast-msg .notification-inline-icon svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2;
+    }
+    .toast-msg br + .notification-inline-icon {
+      margin-top: 4px;
+    }
+    .toast-close {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+      font-size: 16px;
+      transition: color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    }
+    .toast-close:hover {
+      color: #f3f4f6;
+      background: rgba(255,255,255,0.08);
+      transform: scale(1.04);
+    }
+    .toast-bar {
+      height: 3px;
+      border-radius: 0 999px 999px 0;
+      background: linear-gradient(90deg, var(--toast-accent), rgba(255,255,255,0.72));
+      box-shadow: 0 0 16px var(--toast-accent-soft);
+      z-index: 2;
+    }
+    .toast.loading {
+      --toast-accent: #818cf8;
+      --toast-accent-soft: rgba(129, 140, 248, 0.18);
+    }
+    .toast.success {
+      --toast-accent: #34d399;
+      --toast-accent-soft: rgba(52, 211, 153, 0.16);
+    }
+    .toast.error {
+      --toast-accent: #fb7185;
+      --toast-accent-soft: rgba(251, 113, 133, 0.17);
+    }
+    .toast.warning {
+      --toast-accent: #fbbf24;
+      --toast-accent-soft: rgba(251, 191, 36, 0.16);
+    }
+    .toast.loading .toast-title { color: #dbe3ff; }
+    .toast.success .toast-title { color: #86efac; }
+    .toast.error .toast-title { color: #fda4af; }
+    .toast.warning .toast-title { color: #fde68a; }
+    .toast .spinner {
+      width: 19px;
+      height: 19px;
+      border-color: var(--toast-accent);
+      border-top-color: transparent;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes slideIn {
       from { opacity: 0; transform: translateX(100%) scale(0.95); }
       to { opacity: 1; transform: translateX(0) scale(1); }
     }
     @keyframes shrink { from { width: 100%; } to { width: 0%; } }
+
+    .service-progress-window {
+      --service-accent: #818cf8;
+      --service-accent-soft: rgba(129, 140, 248, 0.18);
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 1001;
+      width: min(520px, calc(100vw - 32px));
+      color: #e8eaed;
+      background: linear-gradient(145deg, rgba(20, 25, 38, 0.98) 0%, rgba(12, 17, 28, 0.99) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 3px solid var(--service-accent);
+      border-radius: 10px;
+      box-shadow: 0 22px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+      backdrop-filter: blur(18px) saturate(160%);
+      overflow: hidden;
+      transition: width 0.24s ease, transform 0.24s ease, opacity 0.24s ease;
+      animation: slideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .service-progress-window::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 28px 24px, var(--service-accent-soft), transparent 42%),
+                  linear-gradient(180deg, rgba(255,255,255,0.055), transparent 38%);
+      pointer-events: none;
+    }
+    .service-progress-window.hide {
+      opacity: 0;
+      transform: translateX(100%) scale(0.96);
+    }
+    .service-progress-main {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+    }
+    .service-progress-icon {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 38px;
+      border-radius: 9px;
+      background: var(--service-accent-soft);
+      border: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 22px var(--service-accent-soft);
+    }
+    .service-progress-icon svg {
+      width: 22px;
+      height: 22px;
+      animation: serviceDone 0.55s ease both;
+    }
+    .service-progress-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .service-progress-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .service-progress-title {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+    .service-progress-subtitle,
+    .service-progress-log {
+      color: #aeb6c4;
+      font-size: 12px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .service-progress-percent {
+      color: #dbe3ff;
+      font-size: 18px;
+      font-weight: 750;
+      line-height: 1;
+    }
+    .service-progress-track {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .service-progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--service-accent), rgba(255,255,255,0.72));
+      box-shadow: 0 0 18px var(--service-accent-soft);
+      transition: width 0.3s ease;
+    }
+    .service-progress-log {
+      min-height: 34px;
+      max-height: 84px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+    .service-progress-sound {
+      margin-top: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #c8ced9;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .service-progress-sound input {
+      accent-color: var(--service-accent);
+    }
+    .service-progress-actions {
+      display: flex;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+    .service-progress-actions button {
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #8d96a6;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+    .service-progress-actions button:hover {
+      background: rgba(255,255,255,0.08);
+      color: #f3f4f6;
+      transform: scale(1.04);
+    }
+    .service-progress-actions svg {
+      width: 16px;
+      height: 16px;
+    }
+    .service-progress-window.minimized {
+      width: min(360px, calc(100vw - 32px));
+    }
+    .service-progress-window.minimized .service-progress-main {
+      padding: 14px;
+    }
+    .service-progress-window.minimized .service-progress-track,
+    .service-progress-window.minimized .service-progress-log,
+    .service-progress-window.minimized .service-progress-sound {
+      display: none;
+    }
+    .service-progress-window.minimized .service-progress-head {
+      margin-bottom: 0;
+    }
+    .service-progress-window.minimized .service-progress-subtitle {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 210px;
+    }
+    .service-progress-window.success {
+      --service-accent: #34d399;
+      --service-accent-soft: rgba(52, 211, 153, 0.16);
+    }
+    .service-progress-window.error {
+      --service-accent: #fb7185;
+      --service-accent-soft: rgba(251, 113, 133, 0.17);
+    }
+    .service-progress-window.error .service-progress-icon svg {
+      animation: serviceError 0.55s ease both;
+    }
+    @keyframes serviceDone {
+      0% { transform: scale(0.7); opacity: 0; }
+      65% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes serviceError {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-2px); }
+      40%, 80% { transform: translateX(2px); }
+    }
 
     /* Status Bar Inferior */
     .status-bar {
@@ -892,6 +1266,12 @@
 
     /* Tema Claro */
     body[data-theme="light"] {
+      color-scheme: light;
+      --scrollbar-track: rgba(226, 232, 240, 0.82);
+      --scrollbar-track-border: rgba(15, 23, 42, 0.08);
+      --scrollbar-thumb-color: #4f46e5;
+      --scrollbar-thumb: linear-gradient(180deg, rgba(99, 102, 241, 0.86), rgba(79, 70, 229, 0.78));
+      --scrollbar-thumb-hover: linear-gradient(180deg, rgba(79, 70, 229, 0.94), rgba(67, 56, 202, 0.9));
       background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #f0f3f7 100%);
       color: #1a1a1a;
     }
@@ -938,6 +1318,25 @@
     }
     body[data-theme="light"] .toast-msg {
       color: #4b5563;
+    }
+    body[data-theme="light"] .toast {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.98) 100%);
+      border-color: rgba(15, 23, 42, 0.08);
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16),
+                  0 8px 18px rgba(15, 23, 42, 0.1),
+                  0 0 0 1px rgba(255,255,255,0.8),
+                  inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    body[data-theme="light"] .toast::before {
+      opacity: 0.55;
+    }
+    body[data-theme="light"] .toast-title,
+    body[data-theme="light"] .toast-msg b {
+      color: #111827;
+    }
+    body[data-theme="light"] .toast-close:hover {
+      color: #111827;
+      background: rgba(15, 23, 42, 0.07);
     }
     body[data-theme="light"] .history-item {
       background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%);
@@ -990,12 +1389,13 @@
           <span class="stat-value" id="ram-usage">—</span>
           <div class="stat-bar"><div class="stat-bar-fill low" id="ram-bar" style="width:0%"></div></div>
         </div>
-        <div class="stat-item clock">
-          <i data-lucide="clock" style="width:14px;height:14px"></i>
-          <span class="stat-value" id="clock">00:00:00</span>
+        <div class="stat-item">
+          <i data-lucide="thermometer" style="width:14px;height:14px"></i>
+          <span class="stat-label">TEMP</span>
+          <span class="stat-value" id="cpu-temp">—</span>
         </div>
       </div>
-      <div class="header-version">v1.1.0</div>
+      <div class="header-version">v1.1.1</div>
       <button id="theme-toggle" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 6px 10px; cursor: pointer; transition: all 0.3s ease;" title="Alternar tema">
         <i data-lucide="sun" style="width:16px;height:16px;color:#fbbf24;"></i>
       </button>
@@ -1063,6 +1463,33 @@
             <span class="btn-desc">Streaming de música</span>
           </span>
         </button>
+        <button class="tool-btn" data-cmd="winget install --id TeamViewer.TeamViewer -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/teamviewer.png" alt="TeamViewer"></span>
+          <span class="btn-text">
+            <span class="btn-title">TeamViewer</span>
+            <span class="btn-desc">Acesso remoto e suporte online</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id AnyDeskSoftwareGmbH.AnyDesk -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/anydesk.png" alt="AnyDesk"></span>
+          <span class="btn-text">
+            <span class="btn-title">AnyDesk</span>
+            <span class="btn-desc">Software de desktop remoto rápido</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id RustDesk.RustDesk -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/rustdesk.png" alt="RustDesk"></span>
+          <span class="btn-text">
+            <span class="btn-title">RustDesk</span>
+            <span class="btn-desc">Alternativa de acesso remoto open-source</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-cmd="winget install --id FastCopy.FastCopy -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><img src="assets/icons/fastcopy.png" alt="Fast Copy"></span>
+          <span class="btn-text">
+            <span class="btn-title">Fast Copy</span>
+            <span class="btn-desc">Ferramenta gratuita de transferência e cópia de arquivos</span>
+          </span>
       </div>
 
       <!-- IMPRESSÃO -->
@@ -1171,6 +1598,22 @@
           <span class="btn-icon"><i data-lucide="key-round" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Limpar Credenciais de Rede</span><span class="btn-desc">Remove senhas e credenciais antigas armazenadas</span></span>
         </button>
+        <button class="tool-btn" data-cmd="ADD_NET_CRED" data-special="add-net-cred">
+          <span class="btn-icon"><i data-lucide="key-round" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Adicionar Credencial de Rede</span><span class="btn-desc">Cria uma nova credencial no Windows Vault</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="cmdkey /list">
+          <span class="btn-icon"><i data-lucide="list" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Listar Credenciais</span><span class="btn-desc">Exibe as credenciais de rede armazenadas</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="EDIT_NET_CRED" data-special="edit-net-cred">
+          <span class="btn-icon"><i data-lucide="edit" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Editar Credencial de Rede</span><span class="btn-desc">Modifica o usuário e senha de uma credencial salva</span></span>
+        </button>
+        <button class="tool-btn danger" data-cmd="DELETE_NET_CRED" data-special="delete-net-cred">
+          <span class="btn-icon"><i data-lucide="trash-2" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Excluir Credencial Específica</span><span class="btn-desc">Remove permanentemente um destino da lista</span></span>
+        </button>
         <button class="tool-btn" data-cmd="ipconfig /all">
           <span class="btn-icon"><i data-lucide="network" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Info de Rede</span><span class="btn-desc">Exibe todas as configurações de rede</span></span>
@@ -1182,6 +1625,10 @@
         <button class="tool-btn" data-cmd="ping -n 4 8.8.8.8">
           <span class="btn-icon"><i data-lucide="radio" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Testar Conexão</span><span class="btn-desc">Ping para o DNS do Google</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="PING_SPECIFIC" data-special="ping-specific">
+          <span class="btn-icon"><i data-lucide="search-code" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Ping em IP Específico</span><span class="btn-desc">Realiza teste de conexão para um IP ou Host definido</span></span>
         </button>
       </div>
 
@@ -1247,9 +1694,21 @@
           <span class="btn-icon"><i data-lucide="activity" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Conexões Ativas</span><span class="btn-desc">Mostra todas as conexões de rede ativas</span></span>
         </button>
+        <button class="tool-btn" data-cmd="CONVERT_MS_LOCAL" data-special="convert-to-local">
+          <span class="btn-icon"><i data-lucide="user-circle" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Conta Microsoft para Local</span><span class="btn-desc">Inicia o processo de conversão de conta online</span></span>
+        </button>
         <button class="tool-btn" data-cmd="RENAME_ADMIN" data-special="rename-admin">
           <span class="btn-icon"><i data-lucide="user-cog" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Renomear Administrador</span><span class="btn-desc">Altera o nome da conta Administrador</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="ADD_USER" data-special="add-user">
+          <span class="btn-icon"><i data-lucide="user-plus" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Adicionar novo usuário local</span><span class="btn-desc">Cria uma nova conta de usuário no Windows</span></span>
+        </button>
+        <button class="tool-btn danger" data-cmd="DELETE_USER" data-special="delete-user">
+          <span class="btn-icon"><i data-lucide="user-x" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Excluir usuario</span><span class="btn-desc">Remove uma conta local ativa do Windows</span></span>
         </button>
       </div>
 
@@ -1286,10 +1745,6 @@
         <button class="tool-btn danger" data-cmd="powershell -Command &quot;Checkpoint-Computer -Description 'ThunderTools Restore Point' -RestorePointType 'MODIFY_SETTINGS'&quot;">
           <span class="btn-icon"><i data-lucide="save" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Criar Ponto de Restauração</span><span class="btn-desc">Cria backup do estado atual do sistema</span></span>
-        </button>
-        <button class="tool-btn" data-cmd="CUSTOM_MESSAGE" data-special="custom-message">
-          <span class="btn-icon"><i data-lucide="message-square" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Mensagem Personalizada</span><span class="btn-desc">Exibe mensagem customizada na tela</span></span>
         </button>
         <button class="tool-btn" data-cmd="RENAME_PC" data-special="rename-pc">
           <span class="btn-icon"><i data-lucide="monitor" style="width:22px;height:22px"></i></span>
@@ -1329,7 +1784,11 @@
   </div>
 
   <div id="toast-container"></div>
-  <script>lucide.createIcons()</script>
+  <script>
+    if (window.lucide) {
+      window.lucide.createIcons()
+    }
+  </script>
   <script src="renderer.js"></script>
 </body>
 </html>
