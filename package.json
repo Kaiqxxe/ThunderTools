@@ -18,10 +18,14 @@
     "files": [
       "main.js",
       "renderer.js",
+      "networkInfoModal.js",
+      "uiUtils.js",
       "preload.js",
       "index.html",
+      "index.css",
       "icon.ico",
-      "assets"
+      "assets",
+      "node_modules/systeminformation/**"
     ],
     "directories": {
       "output": "dist"
@@ -49,5 +53,8 @@
       "allowToChangeInstallationDirectory": true,
       "shortcutName": "ThunderTools"
     }
+  },
+  "dependencies": {
+    "systeminformation": "^5.31.7"
   }
 }

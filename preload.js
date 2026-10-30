@@ -9,8 +9,16 @@ contextBridge.exposeInMainWorld('api', {
   getBlockedLocalUsers: () => ipcRenderer.invoke('get-blocked-local-users'),
   runTrackedCommand: (command, trackingId) => ipcRenderer.invoke('run-command', command, trackingId),
   onCommandProgress: (callback) => {
-    const listener = (_, data) => callback(data)
-    ipcRenderer.on('command-progress', listener)
-    return () => ipcRenderer.removeListener('command-progress', listener)
-  }
+    const listener = (_, data) => callback(data);
+    ipcRenderer.on('command-progress', listener);
+    return () => ipcRenderer.removeListener('command-progress', listener);
+  },
+  runSpeedTest: () => ipcRenderer.invoke('run-speed-test'),
+  cancelSpeedTest: () => ipcRenderer.send('cancel-speed-test'),
+  onSpeedTestProgress: (callback) => {
+    const listener = (_, data) => callback(data);
+    ipcRenderer.on('speed-test-progress', listener);
+    return () => ipcRenderer.removeListener('speed-test-progress', listener);
+  },
+  saveTextFile: (options) => ipcRenderer.invoke('save-text-file', options)
 })

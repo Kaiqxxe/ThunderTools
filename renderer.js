@@ -1,4 +1,6 @@
-﻿﻿const container = document.getElementById('toast-container')
+import { showNetworkInfoModal } from './networkInfoModal.js';
+
+const container = document.getElementById('toast-container')
 const AUTO_CLOSE = 8000
 let isCommandRunning = false;
 const globalCancelBtn = document.getElementById('cancel-btn');
@@ -82,6 +84,24 @@ function updateFavoriteButtons() {
   document.querySelectorAll('.tool-btn').forEach(btn => {
     const cmd = btn.dataset.cmd
     if (!cmd) return
+    const title = btn.querySelector('.btn-title')?.textContent || ''
+
+    if (!btn.closest('#favorites-list') && !btn.querySelector('.btn-more-info')) {
+      const infoDetails = getToolMoreInfoDetails(cmd, title)
+      if (infoDetails) {
+        const infoBtn = document.createElement('button')
+        infoBtn.className = 'btn-more-info'
+        infoBtn.type = 'button'
+        infoBtn.title = 'Mais informações'
+        infoBtn.innerHTML = '<i data-lucide="info" style="width:14px;height:14px"></i>'
+        infoBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation()
+          showToolInfoModal(infoDetails.title || title || 'Mais informações', infoDetails)
+        })
+        btn.appendChild(infoBtn)
+        createLucideIcons()
+      }
+    }
     
     const favBtn = btn.querySelector('.btn-favorite')
     if (favBtn) {
@@ -213,6 +233,206 @@ function showDetailsModal(title, output, formattedMsg) {
   document.getElementById('modal-close-details').onclick = () => overlay.remove()
 }
 
+function showInstalledProgramsModal(programs) {
+  const overlay = document.createElement('div')
+  overlay.className = 'modal-overlay'
+  
+  overlay.innerHTML = `
+    <div class="modal" style="max-width: 95%; width: 750px; max-height: 90vh; display: flex; flex-direction: column; padding: 24px;">
+      <div class="modal-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+        <i data-lucide="package" style="width:20px;height:20px"></i>
+        Programas Instalados
+      </div>
+      
+      <!-- Lighter area with filters -->
+      <div class="modal-desc" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; width: 100%;">
+        <div style="display: flex; gap: 8px;" class="filter-buttons">
+          <button class="modal-btn primary filter-btn active" id="filter-newest" style="padding: 6px 12px; font-size: 12px; height: auto;">Mais Recentes</button>
+          <button class="modal-btn secondary filter-btn" id="filter-oldest" style="padding: 6px 12px; font-size: 12px; height: auto;">Mais Antigos</button>
+        </div>
+        <div style="position: relative; flex: 1; min-width: 200px;">
+          <input type="text" id="program-search" placeholder="Pesquisar programa..." style="width: 100%; padding: 6px 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 13px; outline: none;">
+        </div>
+      </div>
+      
+      <!-- Darker area expanding to occupy 90% of modal height -->
+      <div id="modal-content-area" style="background: rgba(0,0,0,0.4); padding: 16px; border-radius: 12px; color: #e0e0e0; font-family: 'Mostica Sans', Poppins, sans-serif; font-size: 13px; flex: 1; overflow-y: auto; border: 1px solid rgba(139, 92, 246, 0.2); scrollbar-gutter: stable; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Program list will be rendered here -->
+      </div>
+      
+      <div class="modal-buttons" style="margin-top: 16px; justify-content: space-between; align-items: center; width: 100%;">
+        <span id="programs-count" style="font-size: 12px; color: #7e8694;">Total: 0 programas</span>
+        <button class="modal-btn secondary" id="modal-close-details" style="padding: 8px 16px;">Fechar</button>
+      </div>
+    </div>
+  `
+  document.body.appendChild(overlay)
+  createLucideIcons()
+  
+  let currentSort = 'newest';
+  let searchQuery = '';
+  
+  function parseRegDate(dateStr) {
+    if (!dateStr) return new Date(0);
+    if (/^\d{8}$/.test(dateStr)) {
+      const y = parseInt(dateStr.substring(0, 4), 10);
+      const m = parseInt(dateStr.substring(4, 6), 10) - 1;
+      const d = parseInt(dateStr.substring(6, 8), 10);
+      return new Date(y, m, d);
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? new Date(0) : d;
+  }
+  
+  function formatFriendlyDate(dateStr) {
+    if (!dateStr) return 'Data desconhecida';
+    if (/^\d{8}$/.test(dateStr)) {
+      return `${dateStr.substring(6, 8)}/${dateStr.substring(4, 6)}/${dateStr.substring(0, 4)}`;
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Data desconhecida';
+    return d.toLocaleDateString('pt-BR');
+  }
+
+  function renderList() {
+    const listContainer = document.getElementById('modal-content-area');
+    if (!listContainer) return;
+    
+    let filtered = programs.filter(p => {
+      const name = (p.DisplayName || '').toLowerCase();
+      const pub = (p.Publisher || '').toLowerCase();
+      const query = searchQuery.toLowerCase();
+      return name.includes(query) || pub.includes(query);
+    });
+    
+    filtered.sort((a, b) => {
+      const dateA = parseRegDate(a.InstallDate);
+      const dateB = parseRegDate(b.InstallDate);
+      if (currentSort === 'newest') {
+        return dateB.getTime() - dateA.getTime();
+      } else {
+        return dateA.getTime() - dateB.getTime();
+      }
+    });
+    
+    document.getElementById('programs-count').textContent = `Total: ${filtered.length} programas`;
+    
+    if (filtered.length === 0) {
+      listContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #7e8694;">Nenhum programa encontrado</div>`;
+      return;
+    }
+    
+    listContainer.innerHTML = filtered.map((p, index) => {
+      const dateText = formatFriendlyDate(p.InstallDate);
+      const versionText = p.DisplayVersion ? `v${p.DisplayVersion}` : '';
+      const pubText = p.Publisher ? ` • ${p.Publisher}` : '';
+      
+      const hasLocation = p.InstallLocation && p.InstallLocation.trim().length > 0;
+      const hasUninstall = p.UninstallString && p.UninstallString.trim().length > 0;
+      const actionBtnStyle = 'padding: 6px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; height: auto; white-space: nowrap; box-sizing: border-box; flex: 0 0 auto;';
+      const disabledBtnStyle = 'opacity: 0.4; cursor: not-allowed;';
+      
+      return `
+        <div class="program-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.04); gap: 16px;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px;" title="${escapeHtml(p.DisplayName)}">
+              ${escapeHtml(p.DisplayName)}
+            </div>
+            <div style="font-size: 11px; color: #7e8694; margin-top: 2px;">
+              <span>${dateText}</span>${versionText ? ` • <span>${escapeHtml(versionText)}</span>` : ''}${pubText ? ` • <span>${escapeHtml(p.Publisher)}</span>` : ''}
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 8px; flex-shrink: 0;">
+            <button class="modal-btn secondary btn-open-location" data-index="${index}" ${hasLocation ? '' : 'disabled'} title="Ir até o local do arquivo" style="${actionBtnStyle}${hasLocation ? '' : ` ${disabledBtnStyle}`}">
+              <i data-lucide="folder-open" style="width:14px;height:14px"></i> Local
+            </button>
+            <button class="modal-btn secondary btn-uninstall-prog" data-index="${index}" ${hasUninstall ? '' : 'disabled'} title="Desinstalar programa" style="${actionBtnStyle} border-color: rgba(239, 68, 68, 0.3); color: #ef4444;${hasUninstall ? '' : ` ${disabledBtnStyle}`}">
+              <i data-lucide="trash-2" style="width:14px;height:14px"></i> Desinstalar
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    createLucideIcons();
+    
+    listContainer.querySelectorAll('.btn-open-location').forEach(btn => {
+      btn.onclick = async () => {
+        const prog = filtered[parseInt(btn.dataset.index, 10)];
+        if (prog && prog.InstallLocation) {
+          toast('info', 'Abrindo Local', `Abrindo pasta: ${prog.InstallLocation}`);
+          await window.api.runCommand(`explorer.exe "${prog.InstallLocation}"`);
+        }
+      };
+    });
+    
+    listContainer.querySelectorAll('.btn-uninstall-prog').forEach(btn => {
+      btn.onclick = async () => {
+        const prog = filtered[parseInt(btn.dataset.index, 10)];
+        if (prog && prog.UninstallString) {
+          showChoiceModal('Desinstalar Programa', `Deseja realmente iniciar o desinstalador de "${prog.DisplayName}"?`, [
+            { label: 'Desinstalar', value: 'yes', primary: true },
+            { label: 'Cancelar', value: 'no', primary: false }
+          ], async (choice, choiceOverlay) => {
+            choiceOverlay.remove();
+            if (choice === 'yes') {
+              const tUn = toast('loading', 'Desinstalação', `Iniciando desinstalador de ${prog.DisplayName}...`);
+              const result = await window.api.runCommand(prog.UninstallString);
+              dismiss(tUn);
+              if (result.success) {
+                toast('success', 'Desinstalação', `Desinstalador concluído para ${prog.DisplayName}. Recarregando lista em instantes...`);
+                setTimeout(async () => {
+                  overlay.remove();
+                  document.querySelector('.tool-btn[data-special="list-installed-programs"]')?.click();
+                }, 3000);
+              } else {
+                toast('error', 'Desinstalação', `Erro ou cancelamento no desinstalador de ${prog.DisplayName}.`);
+              }
+            }
+          });
+        }
+      };
+    });
+  }
+  
+  renderList();
+  
+  const searchInput = document.getElementById('program-search');
+  searchInput.oninput = (e) => {
+    searchQuery = e.target.value;
+    renderList();
+  };
+  
+  const btnNewest = document.getElementById('filter-newest');
+  const btnOldest = document.getElementById('filter-oldest');
+  
+  btnNewest.onclick = () => {
+    if (currentSort !== 'newest') {
+      currentSort = 'newest';
+      btnNewest.classList.add('primary');
+      btnNewest.classList.remove('secondary');
+      btnOldest.classList.add('secondary');
+      btnOldest.classList.remove('primary');
+      renderList();
+    }
+  };
+  
+  btnOldest.onclick = () => {
+    if (currentSort !== 'oldest') {
+      currentSort = 'oldest';
+      btnOldest.classList.add('primary');
+      btnOldest.classList.remove('secondary');
+      btnNewest.classList.add('secondary');
+      btnNewest.classList.remove('primary');
+      renderList();
+    }
+  };
+  
+  document.getElementById('modal-close-details').onclick = () => overlay.remove();
+}
+
+
 // ── Toggle Tema ────────────────────────────────────────────────────────────────
 
 function getTheme() {
@@ -337,7 +557,7 @@ window.api.onSystemStats((data) => {
   
   cpuEl.textContent = `${data.cpu}%`
   ramEl.textContent = `${data.ram}%`
-  if (diskEl) diskEl.textContent = data.disk !== null ? `${data.disk}%` : '—'
+  if (diskEl) diskEl.textContent = (data.temp !== null && data.temp !== undefined) ? `${data.temp}°C` : '—'
   
   // Atualiza barras com cores dinâmicas
   cpuBar.style.width = `${data.cpu}%`
@@ -369,8 +589,24 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;')
 }
 
+let internalWindowsUsersRegex = /^(Administrador|Administrator|Convidado|Guest|DefaultAccount|WDAGUtilityAccount|CodexSandboxOffline|CodexSandboxOnline)$/i;
+
+async function initializeInternalWindowsUsersRegex() {
+  try {
+    if (window.api && window.api.getBlockedLocalUsers) {
+      const blocked = await window.api.getBlockedLocalUsers();
+      if (Array.isArray(blocked) && blocked.length > 0) {
+        const pattern = `^(${blocked.map(u => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`;
+        internalWindowsUsersRegex = new RegExp(pattern, 'i');
+      }
+    }
+  } catch (err) {
+    console.warn('Não foi possível carregar lista dinâmica de usuários bloqueados:', err);
+  }
+}
+
 function isInternalWindowsUser(userName) {
-  return /^(Administrador|Administrator|Convidado|Guest|DefaultAccount|WDAGUtilityAccount|CodexSandboxOffline|CodexSandboxOnline)$/i.test(String(userName || '').trim())
+  return internalWindowsUsersRegex.test(String(userName || '').trim());
 }
 
 const STATE_LABEL = {
@@ -378,11 +614,25 @@ const STATE_LABEL = {
   STOPPED: '🔴 Parado',         // English
   START_PENDING: '🟡 Iniciando',  // English
   STOP_PENDING: '🟡 Parando',     // English
-  '4': '🟢 Em execução', '1': '🔴 Parado', '2': '🟡 Iniciando', '3': '🟡 Parando', // Numeric
+  PAUSED: '🟡 Pausado',
+  '4': '🟢 Em execução', '1': '🔴 Parado', '2': '🟡 Iniciando', '3': '🟡 Parando', '7': '🟡 Pausado', // Numeric
   'EM EXECUÇÃO': '🟢 Em execução', // Portuguese
+  'EM EXECUCAO': '🟢 Em execução',
   'PARADO': '🔴 Parado',           // Portuguese
   'INÍCIO PENDENTE': '🟡 Iniciando', // Portuguese
-  'PARADA PENDENTE': '🟡 Parando'   // Portuguese
+  'INICIO PENDENTE': '🟡 Iniciando',
+  'PARADA PENDENTE': '🟡 Parando',   // Portuguese
+  'PAUSADO': '🟡 Pausado'
+}
+
+function getServiceStateFromOutput(text) {
+  if (!text) return '⚪ Desconhecido';
+  const match = text.match(/(?:STATE|ESTADO)\s*:\s*(?:(\d+)\s+)?([^\r\n(]+)/i);
+  const stateNum = (text.match(/(?:STATE|ESTADO)\s*:\s*(\d+)/i) || [])[1];
+  const stateText = match ? match[2]?.trim().toUpperCase() : null;
+  return (stateText && STATE_LABEL[stateText]) || 
+         (stateNum && STATE_LABEL[stateNum]) || 
+         (stateText ? `⚪ ${stateText}` : '⚪ Desconhecido');
 }
 
 // ── Parsers por comando ────────────────────────────────────────────────────────
@@ -400,8 +650,7 @@ const PARSERS = [
   // Status do spooler
   { match: cmd => /sc query spooler/.test(cmd) && !/wuauserv|bits/.test(cmd),
     result: (_, out) => {
-      const stateRaw = (out.match(/STATE\s*:\s*\d+\s+([^\r\n(]+)/i) || [])[1]?.trim().toUpperCase()
-      const state = STATE_LABEL[stateRaw] || '⚪ Desconhecido'
+      const state = getServiceStateFromOutput(out)
       return `<b>Status:</b> ${state}`
     }
   },
@@ -430,9 +679,9 @@ const PARSERS = [
   { match: cmd => /sc query wuauserv/.test(cmd),
     result: (_, out) => {
       return ['wuauserv', 'bits'].map(svc => {
-        const block = out.split(/\r?\n\r?\n/).find(b => new RegExp(svc, 'i').test(b)) || ''
-        const stateRaw = (block.match(/STATE\s*:\s*\d+\s+(\w+)/i) || [])[1]?.toUpperCase()
-        const state = STATE_LABEL[stateRaw] || '⚪ Desconhecido'
+        const block = out.split(/(?:SERVICE_NAME|NOME_DO_SERVI[CÇ]O)\s*:/i).find(b => new RegExp(svc, 'i').test(b)) || 
+                      out.split(/\r?\n\r?\n/).find(b => new RegExp(svc, 'i').test(b)) || ''
+        const state = getServiceStateFromOutput(block)
         return `<b>${svc}:</b> ${state}`
       }).join('<br>')
     }
@@ -816,11 +1065,18 @@ const PARSERS = [
     }
   },
 
-  // ConexÃµes ativas
+  // Conexões ativas
   { match: cmd => cmd.includes('netstat -ano') && !cmd.includes('LISTENING'),
     result: (_, out) => {
-      const lines = out.trim().split(/\r?\n/).filter(l => l.trim() && /TCP|UDP/i.test(l))
-      return `<b>ConexÃµes ativas:</b> ${lines.length}`
+      const lines = out
+        .trim()
+        .split(/\r?\n/)
+        .filter(line => {
+          const trimmed = line.trim()
+          return /^TCP\s+/i.test(trimmed) || /^UDP\s+/i.test(trimmed)
+        })
+
+      return `<b>Conexões ativas:</b> ${lines.length}`
     }
   },
 
@@ -843,7 +1099,7 @@ const PARSERS = [
 
   // DNS Google/Cloudflare
   { match: cmd => cmd.includes('set dns'),
-    result: (_, out) => {
+    result: (cmd, out) => {
       if (cmd.includes('8.8.8.8'))
         return '<b>Status:</b> 🟢 DNS configurado para Google (8.8.8.8)'
       if (cmd.includes('1.1.1.1'))
@@ -956,6 +1212,7 @@ const STEPS = [
 ]
 
 function getSteps(cmd) {
+  if (!cmd || typeof cmd !== 'string') return ['Executando...']
   for (const s of STEPS) {
     if (s.match(cmd)) return s.steps
   }
@@ -1054,6 +1311,7 @@ function updateToast(el, type, title, html) {
 // â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function isLongServiceCommand(cmd) {
+  if (!cmd || typeof cmd !== 'string') return false
   return LONG_SERVICE_MATCHERS.some(match => match(cmd))
 }
 
@@ -1441,6 +1699,570 @@ function showDeleteUserModal(users, currentUser, callback) {
   updateConfirmState()
 }
 
+function getToolMoreInfoDetails(cmd, title) {
+  const source = `${title || ''} ${cmd || ''}`.toLowerCase()
+
+  // --- IMPRESSÃO ---
+  if (source.includes('printers\\*') || source.includes('limpar fila') || source.includes('limpar_fila')) {
+    return {
+      title: 'Limpar Fila de Impressão',
+      whatItDoes: 'Para o spooler de impressão, remove fisicamente todos os arquivos temporários da fila (trabalhos travados) e reinicia o serviço.',
+      howItWorks: 'Executa uma sequência de comandos net stop spooler, apaga arquivos em System32\\spool\\PRINTERS\\*, e depois net start spooler.',
+      recommendation: 'Use quando houver impressões presas que não podem ser canceladas manualmente e bloqueiam novos trabalhos.'
+    }
+  }
+  if (source.includes('spooler') && source.includes('query')) {
+    return {
+      title: 'Status do Spooler',
+      whatItDoes: 'Verifica o estado atual do serviço de Spooler de Impressão do Windows (se está em execução ou parado).',
+      howItWorks: 'Executa a consulta de serviço utilizando o comando nativo sc query spooler.',
+      recommendation: 'Útil para diagnosticar se problemas de impressão são causados pelo desligamento inesperado do serviço.'
+    }
+  }
+  if (source.includes('spooler') && !source.includes('printers\\*')) {
+    return {
+      title: 'Reiniciar Spooler',
+      whatItDoes: 'Para e reinicia o serviço de Spooler de Impressão do Windows para destravar o sistema de impressão.',
+      howItWorks: 'Envia sinal de parada (net stop) e de início (net start) ao serviço Spooler.',
+      recommendation: 'Use quando as impressoras não responderem, mas não houver trabalhos corrompidos travados na fila física.'
+    }
+  }
+  if (source.includes('get-printer')) {
+    return {
+      title: 'Listar Impressoras',
+      whatItDoes: 'Exibe uma lista de todas as impressoras instaladas no computador com o nome do driver e a porta correspondente.',
+      howItWorks: 'Consulta o Windows via PowerShell usando o cmdlet Get-Printer e formata o resultado em tabela.',
+      recommendation: 'Útil para identificar o nome exato da impressora e checar se o driver ou a porta estão configurados corretamente.'
+    }
+  }
+
+  // --- WINDOWS UPDATE ---
+  if (source.includes('softwaredistribution') || source.includes('catroot2')) {
+    return {
+      title: 'Resetar Windows Update',
+      whatItDoes: 'Redefine os componentes do Windows Update do zero, limpando o cache de downloads antigos e reiniciando os serviços relacionados.',
+      howItWorks: 'Para os serviços wuauserv, cryptSvc, bits, msiserver, renomeia as pastas de cache SoftwareDistribution e Catroot2 para .old, e depois reinicia todos os serviços.',
+      recommendation: 'Use quando o Windows Update apresentar códigos de erro persistentes, travamentos na busca ou na instalação de atualizações.'
+    }
+  }
+  if (source.includes('wuauserv') && source.includes('bits') && (source.includes('net start') || source.includes('net stop')) && !source.includes('softwaredistribution')) {
+    return {
+      title: 'Otimizar Serviços WU',
+      whatItDoes: 'Garante que os serviços essenciais para o funcionamento do Windows Update estejam ativos e operando corretamente.',
+      howItWorks: 'Reinicia os serviços de Atualizações Automáticas (wuauserv) e de Transferência Inteligente em Segundo Plano (bits).',
+      recommendation: 'Use se a busca por atualizações estiver travada ou se os serviços de download em segundo plano pararem de funcionar.'
+    }
+  }
+  if (source.includes('wuauserv') && source.includes('bits') && source.includes('query')) {
+    return {
+      title: 'Status do Windows Update',
+      whatItDoes: 'Consulta se os serviços wuauserv (Windows Update) e BITS (Serviço de Transferência Inteligente) estão ativos no momento.',
+      howItWorks: 'Consulta o status de execução dos serviços do sistema operacional via comandos sc query.',
+      recommendation: 'Útil para verificar se algum software ou vírus desativou os serviços de atualização automática.'
+    }
+  }
+  if (source.includes('wuauclt')) {
+    return {
+      title: 'Forçar Busca de Updates',
+      whatItDoes: 'Comanda o Windows para iniciar imediatamente uma verificação de novas atualizações e baixar os pacotes pendentes.',
+      howItWorks: 'Aciona os binários nativos do Windows Update usando os comandos de controle wuauclt /detectnow e /updatenow.',
+      recommendation: 'Use quando desejar atualizar o sistema imediatamente sem esperar pela rotina automática agendada do Windows.'
+    }
+  }
+
+  // --- DESEMPENHO ---
+  if (source.includes('flushdns')) {
+    return {
+      title: 'Limpar Cache DNS',
+      whatItDoes: 'Limpa a tabela de resolução de nomes (DNS) armazenada localmente no computador, forçando novas consultas à internet.',
+      howItWorks: 'Chama a função de flush do Resolvedor do Windows usando ipconfig /flushdns.',
+      recommendation: 'Útil se você não consegue acessar um site que acabou de mudar de servidor, ou se estiver com lentidão ao resolver endereços web.'
+    }
+  }
+  if (source.includes('8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c') || source.includes('alto desempenho')) {
+    return {
+      title: 'Alto Desempenho (Energia)',
+      whatItDoes: 'Altera o plano de energia do Windows para priorizar o desempenho máximo do processador e componentes, desativando economia agressiva.',
+      howItWorks: 'Aplica o GUID padrão do plano de alto desempenho via utilitário powercfg.',
+      recommendation: 'Ideal para computadores de mesa ou notebooks ligados na tomada que estejam apresentando engasgos ou lentidão em tarefas pesadas.'
+    }
+  }
+  if (source.includes('cleanmgr')) {
+    return {
+      title: 'Limpeza Avançada de Disco',
+      whatItDoes: 'Inicia a ferramenta nativa de limpeza de disco do Windows pré-configurada para remover arquivos obsoletos do sistema.',
+      howItWorks: 'Executa o aplicativo cleanmgr do Windows usando parâmetros de automação configurados.',
+      recommendation: 'Recomendado para recuperar espaço de forma segura, removendo cache de atualizações antigas, logs e lixeira.'
+    }
+  }
+  if (source.includes('tasklist')) {
+    return {
+      title: 'Listar Processos Ativos',
+      whatItDoes: 'Gera uma tabela contendo todos os processos e aplicativos que estão rodando na memória do computador neste momento.',
+      howItWorks: 'Consulta o sistema e lista os executáveis em execução via utilitário de terminal tasklist.',
+      recommendation: 'Útil para identificar se existem programas invisíveis consumindo recursos do computador ou travando o sistema.'
+    }
+  }
+  if (source.includes('physicalmemory')) {
+    return {
+      title: 'Obter Informações RAM',
+      whatItDoes: 'Busca detalhes físicos sobre as memórias RAM instaladas, incluindo capacidade de cada pente, velocidade em MHz e fabricante.',
+      howItWorks: 'Consulta a classe Win32_PhysicalMemory via WMI ou PowerShell.',
+      recommendation: 'Use para descobrir quantos pentes de memória estão instalados e suas frequências antes de realizar um upgrade.'
+    }
+  }
+  if (source.includes('powercfg /energy')) {
+    return {
+      title: 'Relatório de Energia',
+      whatItDoes: 'Analisa o sistema por 60 segundos para gerar um relatório HTML detalhado sobre a eficiência energética e problemas de bateria/energia.',
+      howItWorks: 'Executa a análise de energia do Windows usando powercfg /energy e salva o relatório final na Área de Trabalho.',
+      recommendation: 'Ideal para investigar por que a bateria do notebook está durando pouco ou por que o computador não entra em suspensão.'
+    }
+  }
+  if (source.includes('ram-diagnostic') || source.includes('mdsched')) {
+    return {
+      title: 'Diagnóstico de Memória',
+      whatItDoes: 'Agenda uma verificação profunda de hardware na memória RAM para o próximo reinício do computador.',
+      howItWorks: 'Aciona o utilitário integrado mdsched.exe do Windows.',
+      recommendation: 'Recomendado se o computador estiver apresentando telas azuis (BSOD) frequentes ou travamentos inexplicáveis.'
+    }
+  }
+
+  // --- DISCO ---
+  if (source.includes('sfc /scannow')) {
+    return {
+      title: 'Corrigir Arquivos (SFC)',
+      whatItDoes: 'Verifica a integridade de todos os arquivos protegidos do sistema operacional e repara versões corrompidas ou ausentes.',
+      howItWorks: 'Executa a ferramenta System File Checker (sfc) para comparar os arquivos locais com a cópia íntegra de cache do Windows.',
+      recommendation: 'Execute se o Windows apresentar travamentos inexplicáveis, erros ao abrir programas nativos ou problemas pós-infecção por vírus.'
+    }
+  }
+  if (source.includes('restorehealth') || source.includes('dism')) {
+    return {
+      title: 'Reparar Imagem (DISM)',
+      whatItDoes: 'Compara a imagem local do Windows com os servidores oficiais da Microsoft para baixar e corrigir arquivos corrompidos da base do sistema.',
+      howItWorks: 'Usa a ferramenta DISM (Deployment Image Servicing and Management) conectada à internet para realizar a verificação e reparo.',
+      recommendation: 'Recomendado quando o SFC /scannow falhar em corrigir erros ou se houver problemas graves de arquivos do sistema ausentes.'
+    }
+  }
+  if (source.includes('chkdsk')) {
+    return {
+      title: 'Corrigir Erros no Disco (CHKDSK)',
+      whatItDoes: 'Escaneia o sistema de arquivos do HD ou SSD procurando por erros lógicos ou blocos corrompidos (bad sectors) e tenta repará-los.',
+      howItWorks: 'Executa o chkdsk C: com opções de correção automática (/f /r /x). Se o disco estiver em uso, agenda a verificação para o próximo boot.',
+      recommendation: 'Use se houver lentidão excessiva para abrir arquivos, avisos do Windows sobre erros no disco ou suspeita de falhas físicas no HD.'
+    }
+  }
+  if (source.includes('defrag') && !source.includes('defrag c: /u /v')) {
+    return {
+      title: 'Desfragmentar Disco',
+      whatItDoes: 'Otimiza a gravação e organiza os blocos de dados nos HDDs para acelerar a leitura de arquivos, ou aplica o TRIM no caso de SSDs.',
+      howItWorks: 'Aciona o desfragmentador nativo do Windows de forma otimizada para o disco selecionado.',
+      recommendation: 'Importante para manter a velocidade de discos mecânicos (HDs). Em SSDs, o sistema aplica o TRIM automaticamente.'
+    }
+  }
+  if (source.includes('win32_diskdrive')) {
+    return {
+      title: 'Listar Discos Físicos',
+      whatItDoes: 'Exibe a lista de unidades físicas de armazenamento conectadas (HD, SSD, NVMe, Pendrives) com capacidade total e status.',
+      howItWorks: 'Consulta a API WMI por meio de PowerShell buscando a classe Win32_DiskDrive.',
+      recommendation: 'Útil para checar a saúde básica do hardware e descobrir o modelo exato e o tamanho dos seus discos.'
+    }
+  }
+  if (source.includes('get-psdrive c')) {
+    return {
+      title: 'Espaço em Disco C:',
+      whatItDoes: 'Mostra detalhadamente o espaço utilizado, o espaço livre e o tamanho total da partição C:.',
+      howItWorks: 'Usa PowerShell para ler a unidade de disco e formata as informações de armazenamento em gigabytes.',
+      recommendation: 'Use para obter um diagnóstico rápido de quanto espaço você tem disponível na partição principal do sistema.'
+    }
+  }
+  if (source.includes('scan-disk-health') || source.includes('saúde do disco') || source.includes('disk-health')) {
+    return {
+      title: 'Saúde do Disco (SMART)',
+      whatItDoes: 'Faz um diagnóstico rápido da telemetria de saúde física integrada do disco (SMART), retornando o status de funcionamento.',
+      howItWorks: 'Interroga os atributos SMART do disco físico principal via comando do sistema.',
+      recommendation: 'Use para descobrir preventivamente se um disco rígido ou SSD está prestes a quebrar e precisa de backup imediato.'
+    }
+  }
+
+  // --- REDE ---
+  if (source.includes('winsock reset')) {
+    return {
+      title: 'Redefinir Rede (Reset IP)',
+      whatItDoes: 'Restaura a pilha de protocolos TCP/IP e o catálogo do Winsock para o padrão de fábrica, limpando configurações defeituosas.',
+      howItWorks: 'Executa os comandos netsh winsock reset e netsh int ip reset.',
+      recommendation: 'Recomendado se você não consegue se conectar à internet mesmo com o cabo ou Wi-Fi ativos, ou após a remoção de vírus de rede.'
+    }
+  }
+  if (source.includes('cmdkey') && source.includes('delete')) {
+    return {
+      title: 'Limpar Credenciais',
+      whatItDoes: 'Apaga todas as credenciais de rede, usuários e senhas de domínios ou pastas compartilhadas armazenados no Windows.',
+      howItWorks: 'Lista as credenciais de rede ativas e as remove individualmente usando o comando cmdkey /delete.',
+      recommendation: 'Ideal para corrigir conflitos de acesso a pastas de rede compartilhadas quando a senha do usuário remoto foi alterada.',
+      isDestructive: true,
+      consequences: 'Remover credenciais pode impedir o acesso a recursos de rede até que as credenciais sejam recriadas.'
+    }
+  }
+  if (source.includes('add_net_cred')) {
+    return {
+      title: 'Adicionar Credencial',
+      whatItDoes: 'Permite registrar um usuário e senha associados a um computador ou servidor na rede local.',
+      howItWorks: 'Solicita dados via modal interativo e salva a credencial no Gerenciador de Credenciais do Windows utilizando cmdkey /add.',
+      recommendation: 'Use antes de acessar pastas compartilhadas na rede para evitar que o Windows bloqueie o acesso por falta de login.'
+    }
+  }
+  if (source.includes('cmdkey /list') && !source.includes('for')) {
+    return {
+      title: 'Listar Credenciais Salvas',
+      whatItDoes: 'Listas os endereços de servidores, computadores e usuários registrados no Gerenciador de Credenciais do Windows.',
+      howItWorks: 'Executa o comando nativo cmdkey /list e filtra os resultados para mostrar apenas credenciais relevantes de rede.',
+      recommendation: 'Útil para verificar se o computador tem senhas salvas para servidores específicos de rede.'
+    }
+  }
+  if (source.includes('edit_net_cred')) {
+    return {
+      title: 'Editar Credencial',
+      whatItDoes: 'Modifica o usuário ou senha de uma credencial de rede já cadastrada no sistema.',
+      howItWorks: 'Exibe as credenciais existentes e substitui o cadastro via linha de comando.',
+      recommendation: 'Use quando a senha de acesso a um computador ou servidor de arquivos da rede local for atualizada.'
+    }
+  }
+  if ((source.includes('ipconfig /all') || source.includes('network-info')) && !source.includes('flushdns')) {
+    return {
+      title: 'Informações de Rede',
+      whatItDoes: 'Abre uma janela visual com todas as configurações de rede coletadas (adaptadores, IPv4, IPv6, Gateway, DNS, MAC) e permite exportar em TXT.',
+      howItWorks: 'Coleta a configuração de adaptadores do Windows, organiza os parâmetros em cards modernos e gera arquivo de texto para exportação.',
+      recommendation: 'Use para diagnosticar IP, conferir o gateway do roteador, validar servidores DNS, copiar MACs ou salvar relatórios técnicos.'
+    }
+  }
+  if (source.includes('ipconfig /release') || source.includes('ipconfig /renew')) {
+    return {
+      title: 'Renovar IP',
+      whatItDoes: 'Desconecta temporariamente a placa de rede da rede local e solicita um novo endereço IP ao roteador (servidor DHCP).',
+      howItWorks: 'Limpa a atribuição atual via ipconfig /release e solicita nova configuração via ipconfig /renew.',
+      recommendation: 'Excelente para resolver problemas de "Conexão nula ou limitada" ou conflitos de endereços IP na mesma rede local.'
+    }
+  }
+  if (source.includes('8.8.8.8')) {
+    return {
+      title: 'Ping Google (Latência)',
+      whatItDoes: 'Envia 4 pacotes de teste para o servidor DNS público do Google para testar a estabilidade e a velocidade da sua internet.',
+      howItWorks: 'Mede o tempo de resposta (ida e volta) utilizando o comando ping 8.8.8.8.',
+      recommendation: 'Use para identificar se sua internet está funcionando e medir o atraso (ping) da sua conexão.'
+    }
+  }
+  if (source.includes('ping_specific') || source.includes('ping-specific')) {
+    return {
+      title: 'Ping Customizado',
+      whatItDoes: 'Faz um teste de latência e conectividade para qualquer endereço de IP ou nome de site que você digitar.',
+      howItWorks: 'Abre um modal de input para receber o endereço e executa o utilitário ping do Windows.',
+      recommendation: 'Ideal para checar se um computador específico da rede local ou um servidor de sistemas está ligado e respondendo.'
+    }
+  }
+
+  // --- SISTEMA ---
+  if (source.includes('msinfo32')) {
+    return {
+      title: 'Informações do Sistema',
+      whatItDoes: 'Abre a ferramenta oficial do Windows que exibe uma visão detalhada sobre o hardware, drivers e sistema operacional.',
+      howItWorks: 'Inicia o utilitário gráfico msinfo32.exe em uma janela separada.',
+      recommendation: 'Use para obter informações completas sobre o modelo da placa-mãe, processador, versão exata do Windows e BIOS.'
+    }
+  }
+  if (source.includes('w32tm')) {
+    return {
+      title: 'Sincronizar Relógio',
+      whatItDoes: 'Força o Windows a ajustar o horário do relógio do sistema consultando os servidores de hora oficiais da Microsoft/Internet.',
+      howItWorks: 'Usa a ferramenta do serviço Windows Time para executar o comando w32tm /resync /force.',
+      recommendation: 'Recomendado se o relógio do seu computador estiver atrasado ou adiantado, o que causa falhas de segurança ao acessar sites.'
+    }
+  }
+  if (source.includes('win32_bios')) {
+    return {
+      title: 'Informações da BIOS',
+      whatItDoes: 'Consulta os dados da BIOS instalada na placa-mãe, incluindo fabricante, número de série do computador e versão.',
+      howItWorks: 'Lê as informações da BIOS armazenadas na tabela do sistema através do WMI (Win32_BIOS) via PowerShell.',
+      recommendation: 'Ideal para saber se você precisa atualizar a BIOS e descobrir o número de série para acionar a garantia do computador.'
+    }
+  }
+  if (source.includes('softwarelicensingservice')) {
+    return {
+      title: 'Recuperar Chave Windows',
+      whatItDoes: 'Extrai da memória ou da placa-mãe a chave original de ativação do Windows vinculada a este computador (OEM/Product Key).',
+      howItWorks: 'Realiza uma consulta avançada no serviço de licenciamento de software do Windows via WMI.',
+      recommendation: 'Use se você precisar formatar o computador e quiser guardar a chave de ativação para a reinstalação do Windows.'
+    }
+  }
+  if (source.includes('net user') && !source.includes('cmdkey')) {
+    return {
+      title: 'Listar Usuários',
+      whatItDoes: 'Exibe a lista de todas as contas de usuários criadas e registradas localmente no Windows.',
+      howItWorks: 'Chama o comando nativo net user no terminal para listar os logins.',
+      recommendation: 'Útil para checar se existem contas antigas criadas ou para fins de auditoria de usuários ativos no computador.'
+    }
+  }
+  if (source.includes('gpupdate')) {
+    return {
+      title: 'Forçar Políticas (GPUpdate)',
+      whatItDoes: 'Força a aplicação imediata de todas as diretivas de grupo (Group Policies) locais ou de rede sem precisar reiniciar.',
+      howItWorks: 'Executa o comando gpupdate /force para forçar a atualização imediata.',
+      recommendation: 'Ideal para fazer com que alterações de rede e configurações corporativas feitas pelo administrador passem a valer na hora.'
+    }
+  }
+  if (source.includes('shutdown /a')) {
+    return {
+      title: 'Cancelar Desligamento',
+      whatItDoes: 'Cancela qualquer ordem ativa de desligamento ou reinício do Windows que esteja agendada ou em contagem regressiva.',
+      howItWorks: 'Usa o comando de controle nativo shutdown /a.',
+      recommendation: 'Excelente para abortar o desligamento automático do Windows ativado por atualizações ou por engano.'
+    }
+  }
+
+  // --- SEGURANÇA ---
+  if (source.includes('start-mpscan')) {
+    return {
+      title: 'Verificação Rápida Defender',
+      whatItDoes: 'Inicia uma varredura antivírus rápida nas pastas críticas do sistema onde a maioria das ameaças costuma se esconder.',
+      howItWorks: 'Dispara a busca em segundo plano do antivírus nativo Windows Defender usando comandos do PowerShell.',
+      recommendation: 'Recomendado para fazer um exame rápido de segurança rotineiro sem comprometer o desempenho do computador.'
+    }
+  }
+  if (source.includes('update-mpsignature')) {
+    return {
+      title: 'Atualizar Definições Defender',
+      whatItDoes: 'Força o Windows Defender a baixar e atualizar a lista de vacinas de vírus mais recente dos servidores da Microsoft.',
+      howItWorks: 'Chama a rotina de atualização do Defender por meio de comandos no PowerShell.',
+      recommendation: 'Muito útil se o antivírus estiver desatualizado ou antes de realizar uma verificação completa contra malwares.'
+    }
+  }
+  if (source.includes('advfirewall') || source.includes('firewall')) {
+    return {
+      title: 'Status do Firewall',
+      whatItDoes: 'Exibe o status de ativação das regras de Firewall do Windows para as redes de domínio, privada e pública.',
+      howItWorks: 'Executa a consulta de status do Firewall utilizando o comando netsh advfirewall show allprofiles.',
+      recommendation: 'Use para checar se o Firewall do Windows está ativo e protegendo a máquina contra acessos externos não autorizados.'
+    }
+  }
+
+  // --- PROGRAMAS WINGET ---
+  if (source.includes('google.chrome')) {
+    return {
+      title: 'Instalar Google Chrome',
+      whatItDoes: 'Instala ou atualiza automaticamente o navegador Google Chrome no computador.',
+      howItWorks: 'Executa a instalação silenciosa através do gerenciador de pacotes nativo do Windows (Winget).',
+      recommendation: 'Use para agilizar a formatação ou atualizar o navegador para a versão mais estável e segura.'
+    }
+  }
+  if (source.includes('rarlab.winrar')) {
+    return {
+      title: 'Instalar WinRAR',
+      whatItDoes: 'Instala o clássico descompactador de arquivos WinRAR no computador de forma automática.',
+      howItWorks: 'Chama o gerenciador de pacotes Winget com parâmetros de instalação silenciosa.',
+      recommendation: 'Útil para habilitar a descompactação de arquivos no formato RAR no sistema operacional.'
+    }
+  }
+  if (source.includes('7zip.7zip')) {
+    return {
+      title: 'Instalar 7-Zip',
+      whatItDoes: 'Instala o gerenciador de arquivos compactados e compactador open-source 7-Zip no Windows.',
+      howItWorks: 'Instala a versão estável mais recente utilizando o Winget silenciosamente.',
+      recommendation: 'Recomendado como alternativa leve e gratuita ao WinRAR para gerenciar arquivos zip, 7z e tar.'
+    }
+  }
+  if (source.includes('videolan.vlc')) {
+    return {
+      title: 'Instalar VLC Media Player',
+      whatItDoes: 'Instala o player multimídia universal VLC no computador de maneira automática.',
+      howItWorks: 'Faz o download e instala o reprodutor através do gerenciador de pacotes do Windows.',
+      recommendation: 'Excelente para garantir que o computador consiga reproduzir qualquer formato de vídeo e áudio sem precisar de codecs adicionais.'
+    }
+  }
+  if (source.includes('visualstudiocode')) {
+    return {
+      title: 'Instalar VS Code',
+      whatItDoes: 'Instala o ambiente de desenvolvimento de software e editor de código Visual Studio Code.',
+      howItWorks: 'Baixa e configura o VS Code no sistema de modo silencioso via Winget.',
+      recommendation: 'Essencial para programadores, desenvolvedores e administradores que precisam editar scripts ou código.'
+    }
+  }
+  if (source.includes('spotify.spotify')) {
+    return {
+      title: 'Instalar Spotify',
+      whatItDoes: 'Instala o aplicativo oficial de streaming de música e podcasts Spotify.',
+      howItWorks: 'Baixa e executa a instalação silenciosa utilizando o Winget.',
+      recommendation: 'Perfeito para configurar de maneira rápida a reprodução de músicas e áudios favoritos no computador.'
+    }
+  }
+  if (source.includes('teamviewer')) {
+    return {
+      title: 'Instalar TeamViewer',
+      whatItDoes: 'Instala o software de suporte e controle remoto TeamViewer de forma automática.',
+      howItWorks: 'Roda o utilitário de instalação silenciosa oficial pelo Winget.',
+      recommendation: 'Instale quando precisar receber suporte técnico remoto ou controlar computadores à distância de forma segura.'
+    }
+  }
+  if (source.includes('anydesk')) {
+    return {
+      title: 'Instalar AnyDesk',
+      whatItDoes: 'Instala a ferramenta ultra-rápida e leve de conexão e controle remoto AnyDesk.',
+      howItWorks: 'Realiza a instalação direta e sem prompts do AnyDesk via gerenciador Winget.',
+      recommendation: 'Excelente opção para suporte técnico ágil e compartilhamento remoto de tela com latência mínima.'
+    }
+  }
+  if (source.includes('rustdesk')) {
+    return {
+      title: 'Instalar RustDesk',
+      whatItDoes: 'Instala o utilitário open-source de acesso remoto RustDesk, alternativa moderna aos proprietários.',
+      howItWorks: 'Executa a implantação silenciosa da versão oficial utilizando o gerenciador de pacotes.',
+      recommendation: 'Recomendado para suporte remoto focado em privacidade, permitindo inclusive o uso de servidores próprios.'
+    }
+  }
+  if (source.includes('fastcopy')) {
+    return {
+      title: 'Instalar FastCopy',
+      whatItDoes: 'Instala o utilitário ultra veloz de cópia e transferência de arquivos grandes no Windows.',
+      howItWorks: 'Instala o aplicativo de forma automática e silenciosa usando o comando Winget.',
+      recommendation: 'Ideal para copiar gigabytes ou terabytes de arquivos entre HDs ou servidores de forma muito mais rápida que o Windows Explorer.'
+    }
+  }
+  if (source.includes('list-installed-programs')) {
+    return {
+      title: 'Listar Programas Instalados',
+      whatItDoes: 'Varre o registro do Windows listando todos os programas instalados, versões, datas de instalação e locais.',
+      howItWorks: 'Consulta chaves de desinstalação no registro do Windows de 32 e 64 bits utilizando PowerShell.',
+      recommendation: 'Útil para auditorias de segurança, liberar espaço em disco identificando softwares pesados ou desinstalar programas.'
+    }
+  }
+
+  // --- OUTROS E ESPECIAIS ---
+  if (source.includes('convert-to-local')) {
+    return {
+      title: 'Converter para Conta Local',
+      whatItDoes: 'Converte uma conta vinculada à Microsoft de volta para o formato de conta local tradicional do Windows.',
+      howItWorks: 'Executa comandos administrativos para dissociar a conta da rede e manter os arquivos locais.',
+      recommendation: 'Use se quiser desvincular seu e-mail do login do computador para maior privacidade ou em máquinas de suporte.'
+    }
+  }
+  if (source.includes('rename-admin')) {
+    return {
+      title: 'Renomear Administrador',
+      whatItDoes: 'Altera o nome da conta interna padrão "Administrador" para um nome personalizado, dificultando ataques de força bruta.',
+      howItWorks: 'Modifica o nome do objeto da conta de usuário no banco de dados de segurança local do Windows.',
+      recommendation: 'Altamente recomendável para segurança do sistema. Contas chamadas "Administrador" são os alvos primários de invasores.'
+    }
+  }
+  if (source.includes('rename-pc')) {
+    return {
+      title: 'Renomear Computador',
+      whatItDoes: 'Altera o nome de rede do computador (Hostname) de maneira fácil.',
+      howItWorks: 'Atualiza o registro do computador na rede do Windows, exigindo reiniciar para entrar em vigor.',
+      recommendation: 'Use para padronizar e organizar o nome das máquinas em uma rede doméstica ou corporativa.'
+    }
+  }
+  if (source.includes('custom-message')) {
+    return {
+      title: 'Mensagem Personalizada',
+      whatItDoes: 'Envia e exibe uma caixa de diálogo contendo um texto personalizado na tela atual do computador.',
+      howItWorks: 'Usa a API de mensageria nativa do Windows utilizando o utilitário msg *.',
+      recommendation: 'Útil para técnicos enviarem alertas ou lembretes visuais para usuários em máquinas compartilhadas ou de suporte.'
+    }
+  }
+
+  // Fallback para ferramentas genéricas com base no título
+  if (title) {
+    return {
+      title: title,
+      whatItDoes: `Executa a função de ${title} no sistema operacional.`,
+      howItWorks: `Executa o comando de sistema associado: ${cmd || 'Comando interno'}.`,
+      recommendation: 'Use de acordo com as instruções ou quando necessário para manutenção do computador.'
+    }
+  }
+
+  return null
+}
+
+function showToolInfoModal(title, bodyOrDetails) {
+  const overlay = document.createElement('div')
+  overlay.className = 'modal-overlay'
+  
+  let contentHtml = '';
+  if (bodyOrDetails && typeof bodyOrDetails === 'object') {
+    const isDestructive = !!bodyOrDetails.isDestructive;
+    const warningColor = isDestructive ? '#f87171' : '#fbbf24';
+    const warningIcon = isDestructive ? 'alert-octagon' : 'alert-triangle';
+    const warningBg = isDestructive ? 'rgba(239, 68, 68, 0.06)' : 'rgba(245, 158, 11, 0.04)';
+    const warningBorder = isDestructive ? 'rgba(239, 68, 68, 0.22)' : 'rgba(245, 158, 11, 0.15)';
+    const warningDivider = isDestructive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.12)';
+    const warningTitle = isDestructive ? 'Ação Destrutiva / Risco' : 'Recomendação / Risco';
+
+    contentHtml = `
+      <div class="info-modal-layout" style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="info-section">
+          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: #818cf8; font-weight: 600; font-size: 14px; margin-bottom: 6px;">
+            <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i> O que faz
+          </div>
+          <div class="info-section-content" style="color: #e5e7eb; font-size: 13px; line-height: 1.6; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.15); padding: 14px 16px; border-radius: 8px;">
+            ${bodyOrDetails.whatItDoes || 'Não especificado.'}
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: #34d399; font-weight: 600; font-size: 14px; margin-bottom: 6px;">
+            <i data-lucide="settings" style="width: 16px; height: 16px;"></i> Como funciona
+          </div>
+          <div class="info-section-content" style="color: #e5e7eb; font-size: 13px; line-height: 1.6; background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.12); padding: 14px 16px; border-radius: 8px;">
+            ${bodyOrDetails.howItWorks || 'Não especificado.'}
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: ${warningColor}; font-weight: 600; font-size: 14px; margin-bottom: 6px;">
+            <i data-lucide="${warningIcon}" style="width: 16px; height: 16px;"></i> ${warningTitle}
+          </div>
+          <div class="info-section-content" style="color: #e5e7eb; font-size: 13px; line-height: 1.6; background: ${warningBg}; border: 1px solid ${warningBorder}; padding: 14px 16px; border-radius: 8px;">
+            <div style="color: #d1d5db;">${bodyOrDetails.recommendation || 'Não especificado.'}</div>
+            ${bodyOrDetails.consequences ? `
+              <div style="border-top: 1px solid ${warningDivider}; margin-top: 10px; padding-top: 10px;">
+                <span style="font-weight: 700; color: ${warningColor}; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Consequências:</span>
+                <div style="color: #f3f4f6; font-weight: 500; margin-top: 4px;">${bodyOrDetails.consequences}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    contentHtml = `
+      <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(99, 102, 241, 0.18); border-radius: 12px; padding: 18px 20px; color: #e5e7eb; line-height: 1.7; font-size: 13px; max-height: 58vh; overflow-y: auto;">
+        ${bodyOrDetails || 'Nenhuma informação adicional disponível.'}
+      </div>
+    `;
+  }
+
+  overlay.innerHTML = `
+    <div class="modal" style="max-width: 92vw; width: 620px; display: flex; flex-direction: column;">
+      <div class="modal-title">
+        <i data-lucide="info" style="width:20px;height:20px"></i>
+        ${escapeHtml(title)}
+      </div>
+      <div class="modal-desc" style="margin-bottom: 14px;">Informações sobre a ferramenta</div>
+      ${contentHtml}
+      <div class="modal-buttons" style="margin-top: 18px;">
+        <button class="modal-btn primary" id="tool-info-close">Fechar</button>
+      </div>
+    </div>
+  `
+  document.body.appendChild(overlay)
+  createLucideIcons()
+
+  document.getElementById('tool-info-close').onclick = () => overlay.remove()
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove()
+  })
+}
+
 function attachToolButtonListeners() {
   document.querySelectorAll('.tool-btn').forEach(btn => {
     const cmd = btn.dataset.cmd
@@ -1535,6 +2357,23 @@ function attachToolButtonListeners() {
         }
       }
       const special = btn.dataset.special
+
+      if (!btn.closest('#favorites-list') && !btn.querySelector('.btn-more-info')) {
+        const infoDetails = getToolMoreInfoDetails(cmd, title)
+        if (infoDetails) {
+          const infoBtn = document.createElement('button')
+          infoBtn.className = 'btn-more-info'
+          infoBtn.type = 'button'
+          infoBtn.title = 'Mais informações'
+          infoBtn.innerHTML = '<i data-lucide="info" style="width:14px;height:14px"></i>'
+          infoBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation()
+            showToolInfoModal(infoDetails.title || title || 'Mais informações', infoDetails)
+          })
+          btn.appendChild(infoBtn)
+          createLucideIcons()
+        }
+      }
       
       // Comandos especiais que precisam de input
       if (special === 'rename-admin') {
@@ -1662,6 +2501,54 @@ function attachToolButtonListeners() {
           }
           modal.setLog(result.output);
         })
+        return
+      }
+
+      if (special === 'list-installed-programs') {
+        const tLoad = toast('loading', title, 'Buscando programas instalados (pode levar alguns segundos)...')
+        const psCmd = `powershell -NoProfile -Command "$paths = @('HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*'); $apps = Get-ItemProperty $paths -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -and $_.SystemComponent -ne 1 -and $_.ParentKeyName -eq $null } | ForEach-Object { $date = $_.InstallDate; if (-not $date -and $_.InstallLocation -and (Test-Path $_.InstallLocation)) { try { $date = (Get-Item $_.InstallLocation).CreationTime.ToString('yyyyMMdd') } catch {} }; [PSCustomObject]@{ DisplayName = $_.DisplayName; DisplayVersion = $_.DisplayVersion; Publisher = $_.Publisher; InstallDate = $date; InstallLocation = $_.InstallLocation; UninstallString = $_.UninstallString } }; ConvertTo-Json -InputObject @($apps) -Compress"`
+        const result = await window.api.runCommand(psCmd)
+        dismiss(tLoad)
+
+        if (result.success) {
+          let programs = []
+          try {
+            const rawOutput = result.output.trim()
+            if (rawOutput) {
+              const parsed = JSON.parse(rawOutput)
+              programs = Array.isArray(parsed) ? parsed : [parsed]
+            }
+          } catch (e) {
+            console.error('Error parsing programs JSON:', e)
+          }
+
+          if (programs.length > 0) {
+            showInstalledProgramsModal(programs)
+            addToHistory(title, 'Listar programas instalados', true, icon)
+          } else {
+            toast('warning', title, 'Nenhum programa instalado pôde ser listado ou erro no formato.')
+            addToHistory(title, 'Listar programas instalados', false, icon)
+          }
+        } else {
+          toast('error', title, 'Não foi possível listar os programas instalados.')
+          addToHistory(title, 'Listar programas instalados', false, icon)
+        }
+        return
+      }
+
+
+      if (special === 'startup-apps') {
+        const tLoad = toast('loading', title, 'Abrindo a janela nativa de inicializa??o do Windows...')
+        const result = await window.api.runCommand('start ms-settings:startupapps')
+        dismiss(tLoad)
+
+        if (result.success) {
+          toast('success', title, 'Janela de inicializa??o aberta no Windows.')
+          addToHistory(title, 'Abrir Programas de Inicializa??o', true, icon)
+        } else {
+          toast('error', title, 'N?o foi poss?vel abrir a janela nativa de inicializa??o.')
+          addToHistory(title, 'Abrir Programas de Inicializa??o', false, icon)
+        }
         return
       }
 
@@ -1887,6 +2774,11 @@ function attachToolButtonListeners() {
         return;
       }
 
+      if (special === 'network-info' || (cmd && cmd.trim() === 'ipconfig /all')) {
+        showNetworkInfoModal({ toast, addToHistory });
+        return;
+      }
+
       if (btn.tagName === 'BUTTON') btn.disabled = true
       btn.style.pointerEvents = 'none'
       btn.style.opacity = '0.6'
@@ -1899,24 +2791,46 @@ function attachToolButtonListeners() {
       const trackingId = longService ? `cmd-${Date.now()}-${Math.random().toString(16).slice(2)}` : null
       const serviceWindow = longService ? createServiceProgressWindow(title, steps[0]) : null
       const t = longService ? null : toast('loading', title, steps[0])
-      let i = 1
-      const interval = steps.length > 1 ? setInterval(() => {
-        if (i < steps.length) {
-          const nextStep = steps[i++]
+      let simulatedPercent = 0
+      let hasRealProgress = false
+      let stepIndex = 1
+      
+      const interval = setInterval(() => {
+        if (!hasRealProgress && simulatedPercent < 95) {
+          if (simulatedPercent < 50) {
+            simulatedPercent += 2
+          } else if (simulatedPercent < 80) {
+            simulatedPercent += 1
+          } else if (Math.random() > 0.5) {
+            simulatedPercent += 1
+          }
+          if (serviceWindow) serviceWindow.update({ percent: simulatedPercent })
+        }
+      }, 800)
+
+      const msgInterval = steps.length > 1 ? setInterval(() => {
+        if (stepIndex < steps.length) {
+          const nextStep = steps[stepIndex++]
           if (serviceWindow) serviceWindow.update({ message: nextStep })
           else if (t) t.querySelector('.toast-msg').textContent = nextStep
         }
-      }, 2200) : null
+      }, 2500) : null
 
       const removeProgressListener = trackingId && window.api.onCommandProgress
         ? window.api.onCommandProgress((data) => {
           if (data.id !== trackingId || !serviceWindow) return
-          serviceWindow.update({ percent: data.percent, message: data.message })
+          if (data.percent !== null && data.percent !== undefined) {
+            hasRealProgress = true
+            serviceWindow.update({ percent: data.percent, message: data.message })
+          } else {
+            serviceWindow.update({ message: data.message })
+          }
         })
         : null
 
       const result = longService ? await window.api.runTrackedCommand(cmd, trackingId) : await window.api.runCommand(cmd)
-      if (interval) clearInterval(interval)
+      clearInterval(interval)
+      if (msgInterval) clearInterval(msgInterval)
       if (removeProgressListener) removeProgressListener()
 
       btn.disabled = false

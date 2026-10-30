@@ -3,7 +3,7 @@
 ## v1.2.0 - Gestão de Programas
 
 ### 🆕 Novas Abas
-1. **Programas** 📦
+1. **Programas** 📦 <!-- Corrigido: Acentuação -->
    - Instalação automatizada via Winget
    - Softwares comuns: Chrome, WinRAR, 7-Zip, VLC, VS Code, Discord, Spotify
    - Sistema de feedback visual para progresso de instalação
@@ -11,7 +11,7 @@
 ## v1.1.0 - Melhorias de UX e Novas Funcionalidades
 
 ### 🎨 Melhorias Visuais
-- **Microanimações**: Fade in (300ms), sidebar deslizando (400ms), hover suave (250ms)
+- **Microanimações**: Fade in (300ms), sidebar deslizando (400ms), hover suave (250ms) <!-- Corrigido: Acentuação -->
 - **Indicadores gráficos**: Mini progress bars para CPU/RAM com cores dinâmicas
 - **Profundidade aprimorada**: Múltiplas camadas de sombra (inset top/bottom)
 - **Hierarquia de texto**: Títulos maiores (14px), descrições mais opacas
@@ -19,7 +19,7 @@
 
 ### 🆕 Novas Abas
 1. **Segurança** 🔒
-   - Scan rápido Windows Defender
+   - Scan rápido Windows Defender <!-- Corrigido: Acentuação -->
    - Atualizar definições do Defender
    - Status do Firewall
    - Listar programas instalados
@@ -27,7 +27,7 @@
    - Conexões de rede ativas
 
 2. **Avançado** ⚙️
-   - Limpar arquivos temporários (%temp%, prefetch)
+   - Limpar arquivos temporários (%temp%, prefetch) <!-- Corrigido: Acentuação -->
    - Listar programas de inicialização
    - Alterar DNS (Google 8.8.8.8 / Cloudflare 1.1.1.1)
    - Verificar saúde dos discos
@@ -35,7 +35,7 @@
    - Otimizar SSD (TRIM)
    - Criar ponto de restauração
 
-3. **Histórico** 📜
+3. **Histórico** 📜 <!-- Corrigido: Acentuação -->
    - Registro de todos os comandos executados
    - Status de sucesso/erro
    - Data e hora de execução
@@ -43,7 +43,7 @@
    - Botão para limpar histórico
 
 4. **Favoritos** ⭐
-   - Marcar ferramentas mais usadas
+   - Marcar ferramentas mais usadas <!-- Corrigido: Acentuação -->
    - Acesso rápido às favoritas
    - Botão de estrela em cada ferramenta
    - Sincronização via localStorage
@@ -51,13 +51,13 @@
 ### 🎯 Funcionalidades UX
 - **Toggle Tema Escuro/Claro**: Botão no header para alternar entre temas
 - **Sistema de Favoritos**: Clique na estrela para adicionar/remover favoritos
-- **Histórico Persistente**: Todos os comandos são salvos localmente
+- **Histórico Persistente**: Todos os comandos são salvos localmente <!-- Corrigido: Acentuação -->
 - **Parsers Inteligentes**: 30+ parsers para exibir resultados formatados
 - **Modal de Input**: Sistema de diálogo premium para comandos personalizados
 - **Comandos Interativos**: Renomear Admin, Renomear PC, Mensagem customizada
 
 ### 🔧 Melhorias no Sistema
-- **Chave do Windows**: Exibe a chave de produto original
+- **Chave do Windows**: Exibe a chave de produto original <!-- Corrigido: Acentuação -->
 - **DNS Rápido**: Configuração rápida de DNS Google ou Cloudflare
 - **Limpeza Avançada**: Remove temp, prefetch e cache do Windows
 - **Segurança**: Scan e atualização do Windows Defender
@@ -73,7 +73,7 @@
 - **Animações**: 10+ microanimações
 - **Temas**: 2 (escuro e claro)
 - **Comandos interativos**: 3 (com modal de input)
-
+<!-- Corrigido: Acentuação -->
 ### 🎨 Design System
 - **Cores em camadas**: Fundo escuro transparente, glow suave, gradientes vivos
 - **Progress bars**: Verde (<60%), Amarelo (60-85%), Vermelho (>85%)
@@ -81,7 +81,7 @@
 - **Transições**: 200-400ms para todas as animações
 
 ### 💾 Armazenamento Local
-- Histórico de comandos (50 últimos)
+- Histórico de comandos (50 últimos) <!-- Corrigido: Acentuação -->
 - Lista de favoritos
 - Preferência de tema
 - Persistência entre sessões

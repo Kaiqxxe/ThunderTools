@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <title>ThunderTools</title>
   <script src="assets/vendor/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
   <style>
     :root {
       color-scheme: dark;
@@ -11,8 +15,8 @@
       --scrollbar-track: rgba(8, 8, 12, 0.46);
       --scrollbar-track-border: rgba(255, 255, 255, 0.05);
       --scrollbar-thumb-color: #6366f1;
-      --scrollbar-thumb: linear-gradient(180deg, rgba(129, 140, 248, 0.92), rgba(79, 70, 229, 0.86));
-      --scrollbar-thumb-hover: linear-gradient(180deg, rgba(167, 139, 250, 0.96), rgba(99, 102, 241, 0.94));
+      --scrollbar-thumb: #6366f1;
+      --scrollbar-thumb-hover: #818cf8;
     }
 
     * {
@@ -30,21 +34,16 @@
 
     *::-webkit-scrollbar-track {
       background: var(--scrollbar-track);
-      border: 1px solid var(--scrollbar-track-border);
-      border-radius: 999px;
+      border-radius: 6px;
     }
 
     *::-webkit-scrollbar-thumb {
       background: var(--scrollbar-thumb);
-      background-clip: padding-box;
-      border: 2px solid transparent;
-      border-radius: 999px;
-      box-shadow: 0 0 12px rgba(99, 102, 241, 0.24);
+      border-radius: 6px;
     }
 
     *::-webkit-scrollbar-thumb:hover {
       background: var(--scrollbar-thumb-hover);
-      background-clip: padding-box;
     }
 
     *::-webkit-scrollbar-corner {
@@ -66,7 +65,7 @@
     }
 
     body {
-      font-family: 'Segoe UI', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Poppins', 'Raleway', sans-serif;
       background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
       color: #e0e0e0;
       display: flex;
@@ -349,7 +348,7 @@
     .tab-content.active { display: flex; animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
     .tool-btn {
       background: linear-gradient(135deg, rgba(31, 41, 55, 0.4) 0%, rgba(17, 24, 39, 0.4) 100%);
-      backdrop-filter: blur(8px);
+      backdrop-filter: none;
       border: 1px solid rgba(255, 255, 255, 0.06);
       color: #e0e0e0;
       padding: 18px 20px;
@@ -362,7 +361,7 @@
       flex-direction: row;
       align-items: center;
       gap: 16px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
                   0 1px 3px rgba(0, 0, 0, 0.2),
                   0 0 0 1px rgba(255, 255, 255, 0.02),
@@ -445,7 +444,7 @@
     .tool-btn .btn-favorite {
       position: absolute;
       top: 12px;
-      right: 12px;
+      right: 46px;
       background: rgba(0, 0, 0, 0.4);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 6px;
@@ -458,10 +457,39 @@
     .tool-btn:hover .btn-favorite {
       opacity: 1;
     }
-    .tool-btn .btn-favorite.active {
+    .tool-btn .btn-more-info {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 6px;
+      padding: 6px;
+      cursor: pointer;
       opacity: 1;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+    .tool-btn:hover .btn-more-info {
+      opacity: 1;
+    }
+    .tool-btn .btn-more-info svg {
+      width: 14px;
+      height: 14px;
+      color: #93c5fd;
+      transition: all 0.3s ease;
+    }
+    .tool-btn .btn-more-info:hover {
+      transform: scale(1.1);
+      background: rgba(59, 130, 246, 0.2);
+    }
+    .tool-btn .btn-favorite.active {
+      opacity: 0;
       background: rgba(251, 191, 36, 0.2);
       border-color: rgba(251, 191, 36, 0.4);
+    }
+    .tool-btn:hover .btn-favorite.active {
+      opacity: 1;
     }
     .tool-btn .btn-favorite svg {
       width: 14px;
@@ -567,9 +595,9 @@
       animation: fadeIn 0.2s ease-out;
     }
     .modal {
-      background: linear-gradient(135deg, rgba(30, 35, 55, 0.98) 0%, rgba(20, 25, 45, 0.98) 100%);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(139, 92, 246, 0.3);
+      background: linear-gradient(135deg, rgba(30, 35, 55, 0.7) 0%, rgba(20, 25, 45, 0.8) 100%);
+      backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 16px;
       padding: 28px 32px;
       min-width: 420px;
@@ -798,7 +826,7 @@
     /* Loading (azul/roxo) */
     .toast.loading {
       border-color: rgba(79, 70, 229, 0.4);
-      background: linear-gradient(135deg, rgba(30, 37, 64, 0.95) 0%, rgba(26, 31, 53, 0.95) 100%);
+      background: linear-gradient(135deg, rgba(30, 37, 64, 0.65) 0%, rgba(26, 31, 53, 0.7) 100%);
       box-shadow: 0 12px 40px rgba(79,70,229,0.25),
                   0 4px 12px rgba(0,0,0,0.4),
                   0 0 30px rgba(79,70,229,0.15),
@@ -816,7 +844,7 @@
     /* Success (verde) */
     .toast.success {
       border-color: rgba(34, 197, 94, 0.35);
-      background: linear-gradient(135deg, rgba(15, 41, 34, 0.95) 0%, rgba(10, 31, 26, 0.95) 100%);
+      background: linear-gradient(135deg, rgba(15, 41, 34, 0.65) 0%, rgba(10, 31, 26, 0.7) 100%);
       box-shadow: 0 12px 40px rgba(34,197,94,0.2),
                   0 4px 12px rgba(0,0,0,0.4),
                   0 0 30px rgba(34,197,94,0.12),
@@ -832,7 +860,7 @@
     /* Error (vermelho) */
     .toast.error {
       border-color: rgba(239, 68, 68, 0.35);
-      background: linear-gradient(135deg, rgba(45, 16, 16, 0.95) 0%, rgba(31, 10, 10, 0.95) 100%);
+      background: linear-gradient(135deg, rgba(45, 16, 16, 0.65) 0%, rgba(31, 10, 10, 0.7) 100%);
       box-shadow: 0 12px 40px rgba(239,68,68,0.25),
                   0 4px 12px rgba(0,0,0,0.4),
                   0 0 30px rgba(239,68,68,0.15),
@@ -848,7 +876,7 @@
     /* Warning (amarelo/laranja) */
     .toast.warning {
       border-color: rgba(245, 158, 11, 0.35);
-      background: linear-gradient(135deg, rgba(45, 36, 16, 0.95) 0%, rgba(31, 26, 10, 0.95) 100%);
+      background: linear-gradient(135deg, rgba(45, 36, 16, 0.65) 0%, rgba(31, 26, 10, 0.7) 100%);
       box-shadow: 0 12px 40px rgba(245,158,11,0.25),
                   0 4px 12px rgba(0,0,0,0.4),
                   0 0 30px rgba(245,158,11,0.15),
@@ -878,9 +906,9 @@
     .toast {
       --toast-accent: #818cf8;
       --toast-accent-soft: rgba(129, 140, 248, 0.16);
-      background: linear-gradient(145deg, rgba(20, 25, 38, 0.96) 0%, rgba(12, 17, 28, 0.98) 100%);
-      backdrop-filter: blur(18px) saturate(160%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(145deg, rgba(20, 25, 38, 0.6) 0%, rgba(12, 17, 28, 0.7) 100%);
+      backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-left: 3px solid var(--toast-accent);
       border-radius: 10px;
       padding: 14px 14px 15px;
@@ -1048,15 +1076,50 @@
       z-index: 1001;
       width: min(520px, calc(100vw - 32px));
       color: #e8eaed;
-      background: linear-gradient(145deg, rgba(20, 25, 38, 0.98) 0%, rgba(12, 17, 28, 0.99) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(145deg, rgba(20, 25, 38, 0.7) 0%, rgba(12, 17, 28, 0.8) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-left: 3px solid var(--service-accent);
       border-radius: 10px;
       box-shadow: 0 22px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
-      backdrop-filter: blur(18px) saturate(160%);
+      backdrop-filter: blur(12px) saturate(180%);
       overflow: hidden;
       transition: width 0.24s ease, transform 0.24s ease, opacity 0.24s ease;
       animation: slideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    body[data-theme="light"] .service-progress-window {
+      color: #1f2937;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 248, 252, 0.98) 100%);
+      border-color: rgba(99, 102, 241, 0.18);
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    body[data-theme="light"] .service-progress-window::before {
+      background: radial-gradient(circle at 28px 24px, rgba(99, 102, 241, 0.1), transparent 42%),
+                  linear-gradient(180deg, rgba(255,255,255,0.7), transparent 38%);
+    }
+    body[data-theme="light"] .service-progress-subtitle,
+    body[data-theme="light"] .service-progress-log,
+    body[data-theme="light"] .service-progress-sound {
+      color: #556070;
+    }
+    body[data-theme="light"] .service-progress-title {
+      color: #111827;
+    }
+    body[data-theme="light"] .service-progress-percent {
+      color: #374151;
+    }
+    body[data-theme="light"] .service-progress-track {
+      background: rgba(15, 23, 42, 0.06);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+    body[data-theme="light"] .service-progress-icon {
+      border-color: rgba(99, 102, 241, 0.18);
+      background: rgba(99, 102, 241, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 8px 22px rgba(99, 102, 241, 0.14);
+    }
+    body[data-theme="light"] .service-progress-actions button {
+      border-color: rgba(15, 23, 42, 0.12);
+      background: rgba(255,255,255,0.92);
+      color: #1f2937;
     }
     .service-progress-window::before {
       content: '';
@@ -1270,8 +1333,8 @@
       --scrollbar-track: rgba(226, 232, 240, 0.82);
       --scrollbar-track-border: rgba(15, 23, 42, 0.08);
       --scrollbar-thumb-color: #4f46e5;
-      --scrollbar-thumb: linear-gradient(180deg, rgba(99, 102, 241, 0.86), rgba(79, 70, 229, 0.78));
-      --scrollbar-thumb-hover: linear-gradient(180deg, rgba(79, 70, 229, 0.94), rgba(67, 56, 202, 0.9));
+      --scrollbar-thumb: #6366f1;
+      --scrollbar-thumb-hover: #4f46e5;
       background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 50%, #f0f3f7 100%);
       color: #1a1a1a;
     }
@@ -1349,8 +1412,8 @@
       color: #6b7280;
     }
     body[data-theme="light"] .modal {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
-      border-color: rgba(79, 70, 229, 0.3);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(248, 250, 252, 0.75) 100%);
+      border-color: rgba(79, 70, 229, 0.2);
     }
     body[data-theme="light"] .modal-title {
       color: #1a1a1a;
@@ -1510,11 +1573,15 @@
           <span class="btn-icon"><i data-lucide="printer" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Listar Impressoras</span><span class="btn-desc">Lista todas as impressoras instaladas</span></span>
         </button>
+        <button class="tool-btn danger" data-cmd="start printui.exe /s /t2">
+          <span class="btn-icon"><i data-lucide="package-x" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Eliminar Driver de Impressora</span><span class="btn-desc">Abre a janela nativa para remoção de drivers</span></span>
+        </button>
       </div>
 
       <!-- WINDOWS UPDATE -->
       <div class="tab-content" id="tab-atualizacao">
-        <button class="tool-btn" data-cmd="net stop wuauserv & net stop cryptSvc & net stop bits & net stop msiserver & ren C:\Windows\SoftwareDistribution SoftwareDistribution.old & ren C:\Windows\System32\catroot2 catroot2.old & net start wuauserv & net start cryptSvc & net start bits & net start msiserver">
+        <button class="tool-btn" data-cmd="net stop wuauserv & net stop cryptSvc & net stop bits & net stop msiserver & if exist %SystemRoot%\SoftwareDistribution.old rd /s /q %SystemRoot%\SoftwareDistribution.old & ren %SystemRoot%\SoftwareDistribution SoftwareDistribution.old & if exist %SystemRoot%\System32\catroot2.old rd /s /q %SystemRoot%\System32\catroot2.old & ren %SystemRoot%\System32\catroot2 catroot2.old & net start wuauserv & net start cryptSvc & net start bits & net start msiserver">
           <span class="btn-icon"><i data-lucide="wrench" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Resetar Windows Update</span><span class="btn-desc">Para serviços, renomeia cache e reinicia</span></span>
         </button>
@@ -1526,7 +1593,7 @@
           <span class="btn-icon"><i data-lucide="activity" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Status dos Serviços</span><span class="btn-desc">Verifica wuauserv e bits</span></span>
         </button>
-        <button class="tool-btn" data-cmd="wuauclt /detectnow & wuauclt /updatenow">
+        <button class="tool-btn" data-cmd="powershell -Command &quot;(New-Object -ComObject Microsoft.Update.AutoUpdate).DetectNow(); UsoClient StartInteractiveScan&quot;">
           <span class="btn-icon"><i data-lucide="search" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Forçar Verificação</span><span class="btn-desc">Força detecção e download de atualizações</span></span>
         </button>
@@ -1542,7 +1609,7 @@
           <span class="btn-icon"><i data-lucide="zap" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Modo Alto Desempenho</span><span class="btn-desc">Ativa o plano de energia máximo</span></span>
         </button>
-        <button class="tool-btn" data-cmd="cleanmgr /sagerun:1">
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches' | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name StateFlags0001 -Value 2 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null }; cleanmgr /sagerun:1&quot;">
           <span class="btn-icon"><i data-lucide="trash" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Limpeza de Disco</span><span class="btn-desc">Executa o limpador de disco do Windows</span></span>
         </button>
@@ -1553,6 +1620,10 @@
         <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, Manufacturer | Format-Table -AutoSize&quot;">
           <span class="btn-icon"><i data-lucide="cpu" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Info de Memória RAM</span><span class="btn-desc">Exibe detalhes dos módulos de RAM</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="start mdsched">
+          <span class="btn-icon"><i data-lucide="memory-stick" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Diagnóstico de Memória</span><span class="btn-desc">Abre o teste de memória nativo do Windows</span></span>
         </button>
         <button class="tool-btn" data-cmd="powercfg /energy /output %USERPROFILE%\Desktop\energy_report.html & echo Relatório salvo na Área de Trabalho">
           <span class="btn-icon"><i data-lucide="battery" style="width:22px;height:22px"></i></span>
@@ -1582,9 +1653,9 @@
           <span class="btn-icon"><i data-lucide="database" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Info dos Discos</span><span class="btn-desc">Lista modelos e status dos discos</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-PSDrive C | Select-Object @{Name='Usado';Expression={[math]::Round($_.Used/1GB,1)}}, @{Name='Livre';Expression={[math]::Round($_.Free/1GB,1)}}, @{Name='Total';Expression={[math]::Round(($_.Used+$_.Free)/1GB,1)}} | Format-List&quot;">
+        <button class="tool-btn" data-cmd="DISK_SPACE" data-special="disk-space">
           <span class="btn-icon"><i data-lucide="pie-chart" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Espaço Livre em C:</span><span class="btn-desc">Mostra espaço disponível no disco C:</span></span>
+          <span class="btn-text"><span class="btn-title">Espaço Livre em Disco</span><span class="btn-desc">Escolha uma unidade e veja recomendações para ela</span></span>
         </button>
       </div>
 
@@ -1594,7 +1665,7 @@
           <span class="btn-icon"><i data-lucide="rotate-ccw" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Resetar Winsock/TCP</span><span class="btn-desc">Reseta configurações de rede (requer reinício)</span></span>
         </button>
-        <button class="tool-btn" data-cmd="cmdkey /list & for /f &quot;tokens=1,2 delims= &quot; %G in ('cmdkey /list ^| findstr Target') do cmdkey /delete:%H">
+        <button class="tool-btn" data-cmd="cmdkey /list & for /f &quot;tokens=1,2 delims= &quot; %G in ('cmdkey /list ^| findstr /i /c:Target /c:Destino') do cmdkey /delete:%H">
           <span class="btn-icon"><i data-lucide="key-round" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Limpar Credenciais de Rede</span><span class="btn-desc">Remove senhas e credenciais antigas armazenadas</span></span>
         </button>
@@ -1614,7 +1685,7 @@
           <span class="btn-icon"><i data-lucide="trash-2" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Excluir Credencial Específica</span><span class="btn-desc">Remove permanentemente um destino da lista</span></span>
         </button>
-        <button class="tool-btn" data-cmd="ipconfig /all">
+        <button class="tool-btn" data-cmd="ipconfig /all" data-special="network-info">
           <span class="btn-icon"><i data-lucide="network" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Info de Rede</span><span class="btn-desc">Exibe todas as configurações de rede</span></span>
         </button>
@@ -1622,9 +1693,9 @@
           <span class="btn-icon"><i data-lucide="arrow-left-right" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Renovar IP</span><span class="btn-desc">Libera e renova o endereço IP</span></span>
         </button>
-        <button class="tool-btn" data-cmd="ping -n 4 8.8.8.8">
-          <span class="btn-icon"><i data-lucide="radio" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Testar Conexão</span><span class="btn-desc">Ping para o DNS do Google</span></span>
+        <button class="tool-btn" data-cmd="NETWORK_SPEED_TEST" data-special="network-speed-test">
+          <span class="btn-icon"><i data-lucide="gauge" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Testar Conexão</span><span class="btn-desc">Speed test em tempo real com diagnóstico e dicas</span></span>
         </button>
         <button class="tool-btn" data-cmd="PING_SPECIFIC" data-special="ping-specific">
           <span class="btn-icon"><i data-lucide="search-code" style="width:22px;height:22px"></i></span>
@@ -1634,7 +1705,7 @@
 
       <!-- SISTEMA -->
       <div class="tab-content" id="tab-sistema">
-        <button class="tool-btn" data-cmd="systeminfo">
+        <button class="tool-btn" data-cmd="start msinfo32">
           <span class="btn-icon"><i data-lucide="monitor" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Informações do Sistema</span><span class="btn-desc">Exibe detalhes completos do sistema</span></span>
         </button>
@@ -1682,9 +1753,9 @@
           <span class="btn-icon"><i data-lucide="shield" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Status do Firewall</span><span class="btn-desc">Verifica estado do firewall do Windows</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher | Where-Object {$_.DisplayName} | Sort-Object DisplayName | Format-Table -AutoSize&quot;">
+        <button class="tool-btn" data-cmd="LIST_INSTALLED_PROGRAMS" data-special="list-installed-programs">
           <span class="btn-icon"><i data-lucide="package" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Programas Instalados</span><span class="btn-desc">Lista todos os programas instalados</span></span>
+          <span class="btn-text"><span class="btn-title">Programas Instalados</span><span class="btn-desc">Desinstale e edite programas</span></span>
         </button>
         <button class="tool-btn" data-cmd="netstat -ano | findstr LISTENING">
           <span class="btn-icon"><i data-lucide="network" style="width:22px;height:22px"></i></span>
@@ -1708,31 +1779,31 @@
         </button>
         <button class="tool-btn danger" data-cmd="DELETE_USER" data-special="delete-user">
           <span class="btn-icon"><i data-lucide="user-x" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Excluir usuario</span><span class="btn-desc">Remove uma conta local ativa do Windows</span></span>
+          <span class="btn-text"><span class="btn-title">Excluir usuário</span><span class="btn-desc">Remove uma conta local ativa do Windows</span></span>
         </button>
       </div>
 
       <!-- AVANÇADO -->
       <div class="tab-content" id="tab-avancado">
-        <button class="tool-btn" data-cmd="del /q/f/s %TEMP%\* & del /q/f/s C:\Windows\Temp\* & del /q/f/s C:\Windows\Prefetch\*">
+        <button class="tool-btn" data-cmd="del /q/f/s %TEMP%\* & del /q/f/s %SystemRoot%\Temp\* & del /q/f/s %SystemRoot%\Prefetch\*">
           <span class="btn-icon"><i data-lucide="trash-2" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Limpar Arquivos Temporários</span><span class="btn-desc">Remove temp, prefetch e cache do Windows</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_StartupCommand | Select-Object Name, Command, Location | Format-Table -AutoSize&quot;">
+        <button class="tool-btn" data-cmd="OPEN_STARTUP_APPS" data-special="startup-apps">
           <span class="btn-icon"><i data-lucide="play-circle" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Programas de Inicialização</span><span class="btn-desc">Lista programas que iniciam com o Windows</span></span>
+          <span class="btn-text"><span class="btn-title">Programas de Inicialização</span><span class="btn-desc">Abre a janela nativa de inicialização do Windows</span></span>
         </button>
-        <button class="tool-btn" data-cmd="netsh interface ipv4 set dns name=&quot;Ethernet&quot; static 8.8.8.8 primary & netsh interface ipv4 add dns name=&quot;Ethernet&quot; 8.8.4.4 index=2">
+        <button class="tool-btn" data-cmd="ADD_STARTUP_ENTRY" data-special="add-startup-entry">
+          <span class="btn-icon"><i data-lucide="rocket" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Iniciar com o Windows</span><span class="btn-desc">Adiciona um programa ou serviço à inicialização automática</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;$ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Ethernet*' -and $_.Status -eq 'Up' } | Select-Object -First 1; if (-not $ad) { $ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Ethernet*' } | Select-Object -First 1 }; if ($ad) { Set-DnsClientServerAddress -InterfaceIndex $ad.InterfaceIndex -ServerAddresses @('8.8.8.8','8.8.4.4') } else { throw 'Adaptador Ethernet nao encontrado' }&quot;">
           <span class="btn-icon"><i data-lucide="globe" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">DNS Google (Ethernet)</span><span class="btn-desc">Configura DNS 8.8.8.8 e 8.8.4.4</span></span>
         </button>
-        <button class="tool-btn" data-cmd="netsh interface ipv4 set dns name=&quot;Wi-Fi&quot; static 1.1.1.1 primary & netsh interface ipv4 add dns name=&quot;Wi-Fi&quot; 1.0.0.1 index=2">
+        <button class="tool-btn" data-cmd="powershell -Command &quot;$ad = Get-NetAdapter | Where-Object { ($_.InterfaceAlias -like '*Wi-Fi*' -or $_.InterfaceAlias -like '*Wireless*') -and $_.Status -eq 'Up' } | Select-Object -First 1; if (-not $ad) { $ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Wi-Fi*' -or $_.InterfaceAlias -like '*Wireless*' } | Select-Object -First 1 }; if ($ad) { Set-DnsClientServerAddress -InterfaceIndex $ad.InterfaceIndex -ServerAddresses @('1.1.1.1','1.0.0.1') } else { throw 'Adaptador Wi-Fi nao encontrado' }&quot;">
           <span class="btn-icon"><i data-lucide="wifi" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">DNS Cloudflare (Wi-Fi)</span><span class="btn-desc">Configura DNS 1.1.1.1 e 1.0.0.1</span></span>
-        </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_DiskDrive | Get-CimAssociatedInstance -ResultClassName Win32_DiskDriveToDiskPartition | Get-CimAssociatedInstance -ResultClassName Win32_LogicalDiskToPartition | Get-CimAssociatedInstance -ResultClassName Win32_LogicalDisk | Select-Object DeviceID, @{Name='SizeGB';Expression={[math]::Round($_.Size/1GB,1)}}, @{Name='FreeGB';Expression={[math]::Round($_.FreeSpace/1GB,1)}} | Format-Table -AutoSize&quot;">
-          <span class="btn-icon"><i data-lucide="hard-drive" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Saúde dos Discos</span><span class="btn-desc">Verifica status e espaço de todos os discos</span></span>
         </button>
         <button class="tool-btn" data-cmd="DISM /Online /Cleanup-Image /StartComponentCleanup /ResetBase">
           <span class="btn-icon"><i data-lucide="package-x" style="width:22px;height:22px"></i></span>
@@ -1789,6 +1860,6 @@
       window.lucide.createIcons()
     }
   </script>
-  <script src="renderer.js"></script>
+  <script type="module" src="renderer.js"></script>
 </body>
 </html>
