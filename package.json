@@ -16,16 +16,22 @@
     "appId": "com.thundertools.app",
     "productName": "ThunderTools",
     "files": [
+      "*.js",
       "main.js",
       "renderer.js",
+      "telemetry.js",
+      "dashboardController.js",
       "networkInfoModal.js",
+      "pingModal.js",
+      "speedTestModal.js",
       "uiUtils.js",
       "preload.js",
       "index.html",
       "index.css",
       "icon.ico",
-      "assets",
-      "node_modules/systeminformation/**"
+      "assets/**",
+      "node_modules/systeminformation/**",
+      "src/**"
     ],
     "directories": {
       "output": "dist"

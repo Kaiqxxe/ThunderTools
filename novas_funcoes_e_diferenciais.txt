@@ -1,0 +1,113 @@
+========================================================================
+THUNDERTOOLS - NOVAS FUNÇÕES CRUCIAIS E DIFERENCIAIS (VERSÃO FINAL)
+========================================================================
+
+1. ABA INÍCIO (DASHBOARD)
+-------------------------
+[Novas Funções Cruciais]
+- Resumo de Hardware no Topo/Rodapé: Exibir modelo exato da CPU, Placa-Mãe, GPU, total de RAM e Tempo de Atividade (Uptime do Windows).
+
+[Diferenciais]
+- Modo "Manutenção 1-Clique" (Smart Care): Checklist guiado (Limpar Temp + Flush DNS + Limpar Fila de Impressão + Otimizar TRIM + Verificar SFC) executado em fila única com relatório "Antes vs. Depois" (ex.: GB liberados e RAM reduzida).
+
+
+2. ABA IMPRESSÃO
+----------------
+[Novas Funções Cruciais]
+- Corrigir Erro de Compartilhamento de Impressora em Rede (0x0000011b / 0x00000709 / 0x00000bcb): Correção automática no Registro (RpcAuthnLevelPrivacyEnabled) + reinício do Spooler.
+- Ações Rápidas por Impressora: Botões diretos na listagem para "Definir como Padrão", "Abrir Fila" e "Imprimir Página de Teste".
+
+[Diferenciais]
+- Backup e Restauração Completa de Impressoras (PrintBRM): Exportar e importar todas as impressoras, portas TCP/IP e drivers em um arquivo único (.printerExport) para pós-formatação.
+
+
+3. ABA WINDOWS UPDATE
+---------------------
+[Novas Funções Cruciais]
+- Pausar / Retomar Atualizações: Opção rápida para pausar updates por 7, 30 ou 365 dias.
+- Histórico e Desinstalação de Atualizações (KBs): Listar últimas atualizações instaladas (Get-HotFix) com botão para remover atualizações problemáticas.
+
+[Diferenciais]
+- Bloquear Atualização Automática de Drivers pelo Windows Update: Evitar que o Windows substitua drivers específicos (vídeo, áudio, impressora) por versões genéricas.
+
+
+4. ABA DESEMPENHO
+-----------------
+[Novas Funções Cruciais]
+- Desbloquear e Ativar Plano "Desempenho Máximo" (Ultimate Performance): Ativar o plano oculto do Windows 10/11 para máxima performance.
+- Otimizador de Efeitos Visuais / Transparência: Alternar rapidamente entre "Melhor Desempenho" (para PCs com pouca RAM) e "Padrão do Windows".
+- Gerenciador Interativo de Processos (Top Consumidores): Exibir os 15 processos que mais usam CPU/RAM em tempo real com botão "Encerrar Tarefa".
+
+[Diferenciais]
+- Limpador Inteligente de Memória RAM (Standby List / Working Set): Liberar memória RAM presa em cache instantaneamente sem reiniciar o PC, exibindo quantos MB/GB foram recuperados.
+
+
+5. ABA DISCO
+------------
+[Novas Funções Cruciais]
+- Diagnóstico S.M.A.R.T. Detalhado: Exibir Saúde (%), Temperatura do SSD/HDD, Horas de Uso e contagem de erros de leitura/gravação.
+- Alternar Hibernação (powercfg -h off/on): Desativar o arquivo hiberfil.sys para liberar de 4 GB a 16 GB instantaneamente no SSD.
+
+[Diferenciais]
+- Radar de Pastas e Arquivos Gigantes (Storage Scanner): Mapear onde o espaço está sendo consumido (Downloads, Windows.old, AppData, Lixeira) e listar os 20 maiores arquivos do disco com ação rápida para abrir local ou excluir.
+
+
+6. ABA REDE
+-----------
+[Novas Funções Cruciais]
+- Visualizador de Senhas de Wi-Fi Salvas: Listar todas as redes Wi-Fi salvas no computador com exibição da senha e botão "Copiar Senha".
+- Seletor Unificado de DNS com Benchmark de Latência: Testar o ping de Cloudflare (1.1.1.1), Google (8.8.8.8), Quad9 (9.9.9.9), OpenDNS e DHCP Automático, aplicando o mais rápido na interface ativa (Wi-Fi ou Ethernet).
+
+[Diferenciais]
+- Scanner de Dispositivos na Rede Local (LAN Scan) & Corretor SMB: Listar todos os dispositivos/IPs conectados na mesma rede (impressoras, roteadores, PCs) e corrigir problemas de compartilhamento de pastas em rede local.
+
+
+7. ABA SISTEMA
+--------------
+[Novas Funções Cruciais]
+- Relatório de Saúde da Bateria (Notebooks): Exibir Capacidade de Fábrica vs. Capacidade Atual e percentual de desgaste da bateria.
+- Reinicialização Avançada: Botões para "Reiniciar direto na BIOS/UEFI" (shutdown /r /fw /t 0) e "Reiniciar em Modo de Segurança".
+- Analisador de Tela Azul (BSOD) e Desligamentos Inesperados: Ler eventos críticos (Event ID 41, 1001, BugCheck) para diagnosticar causas de travamentos e telas azuis.
+
+[Diferenciais]
+- Backup Completo de Drivers Instalados: Exportar todos os drivers de terceiros do sistema (dism /export-driver) para uma pasta segura antes de formatar a máquina.
+
+
+8. ABA SEGURANÇA
+----------------
+[Novas Funções Cruciais]
+- Auditoria de Portas e Conexões com Nome do Processo: Cruzar o PID do netstat com o nome real do executável (ex.: chrome.exe, anydesk.exe) e permitir encerrar processos suspeitos.
+- Visualizador e Restaurador do Arquivo HOSTS: Verificar adulterações no arquivo hosts do Windows e restaurar o padrão original da Microsoft com 1 clique.
+
+[Diferenciais]
+- Painel de Privacidade e Desativação de Telemetria (Debloat Seguro): Chaves reversíveis para desativar telemetria, anúncios no Menu Iniciar, Bing na pesquisa e sugestões invasivas, com botão "Restaurar Padrão".
+
+
+9. ABA AVANÇADO
+---------------
+[Novas Funções Cruciais]
+- Gerenciador Completo de Inicialização: Além de adicionar programas/serviços, listar os itens que já iniciam com o Windows permitindo ativar, desativar ou remover entradas no próprio modal.
+- Gerenciador de Pontos de Restauração: Listar todos os pontos de restauração existentes com data/descrição e opção de restaurar ou excluir.
+- Reparar Cache de Ícones e Reiniciar Windows Explorer: Limpar iconcache/thumbcache e reiniciar o explorer.exe para destravar barra de tarefas e ícones brancos.
+
+[Diferenciais]
+- Desinstalador de Bloatware Nativo (Apps UWP): Seleção em lote para remover aplicativos pré-instalados indesejados do Windows (Xbox, Clima, Notícias, Solitaire, Skype, etc.).
+
+
+10. ABA PROGRAMAS
+-----------------
+[Novas Funções Cruciais]
+- Pacote de Runtimes Pós-Formatação: Adicionar Visual C++ All-in-One (2015-2022), .NET Desktop Runtime, DirectX End-User Runtime, Adobe Reader, LibreOffice, Brave/Firefox e CPU-Z/HWMonitor.
+- Atualizar Todos os Programas (winget upgrade --all): Botão em destaque para atualizar silenciosamente todos os softwares instalados no PC.
+
+[Diferenciais]
+- Instalador em Lote Estilo "Ninite" + Kits Rápidos: Caixas de seleção para marcar múltiplos programas de uma vez ou escolher perfis prontos ("Kit Escritório", "Kit Gamer", "Kit Suporte Técnico") e instalar em fila automática.
+
+
+11. RECURSOS GLOBAIS / HISTÓRICO / FAVORITOS
+--------------------------------------------
+[Novas Funções Cruciais]
+- Busca Global Instantânea (Ctrl + K): Barra de pesquisa no topo para filtrar qualquer ferramenta de todas as abas em tempo real.
+
+[Diferenciais]
+- Gerador de Ordem de Serviço / Laudo Técnico para o Cliente (PDF/HTML): Relatório final contendo o resumo do hardware, todas as ferramentas executadas na sessão (extraídas do Histórico) e o espaço em disco recuperado.

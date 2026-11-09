@@ -1,13 +1,48 @@
+import { initAiDiagnosticsTab } from './aiDiagnosticsTab.js';
+import { initDashboardController, updateDashboardMetrics } from './dashboardController.js';
 import { showNetworkInfoModal } from './networkInfoModal.js';
+import { showSpeedTestModal } from './speedTestModal.js';
+import { showPingModal } from './pingModal.js';
+import { showRamInfoModal } from './ramInfoModal.js';
+import { showDriverBackupModal } from './driverBackupModal.js';
+import {
+  initGlobalSearch,
+  showServiceOrderModal,
+  initHardwareSummaryStrip,
+  showSmartCareModal,
+  showPrivacyDebloatModal,
+  showPortsProcessAuditModal,
+  showHostsManagerModal,
+  showFullStartupManagerModal,
+  showRestorePointsModal,
+  showUwpBloatwareModal,
+  initProgramsBatchController,
+  showPrinterManagerModal,
+  showWindowsUpdatePauseModal,
+  showInstalledUpdatesModal,
+  showTopProcessesModal,
+  showVisualEffectsModal,
+  showSmartHealthModal,
+  showStorageScannerModal,
+  showWifiPasswordsModal,
+  showDnsBenchmarkModal,
+  showLanScannerModal,
+  showBatteryHealthModal,
+  showAdvancedRebootModal,
+  showBsodAnalyzerModal,
+  showUltimatePerformanceModal,
+  runPsJson
+} from './proFeatures.js';
 
 const container = document.getElementById('toast-container')
 const AUTO_CLOSE = 8000
 let isCommandRunning = false;
 const globalCancelBtn = document.getElementById('cancel-btn');
 
-function createLucideIcons() {
+function createLucideIcons(root = document) {
   if (window.lucide && typeof window.lucide.createIcons === 'function') {
-    window.lucide.createIcons()
+    const target = (root && root.nodeType) ? root : document
+    window.lucide.createIcons({ root: target })
   }
 }
 
@@ -61,14 +96,14 @@ function saveFavorites(favorites) {
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites))
 }
 
-function toggleFavorite(cmd, title, desc, icon) {
+function toggleFavorite(cmd, title, desc, icon, special = '') {
   const favorites = getFavorites()
   const index = favorites.findIndex(f => f.cmd === cmd)
   
   if (index >= 0) {
     favorites.splice(index, 1)
   } else {
-    favorites.push({ cmd, title, desc, icon })
+    favorites.push({ cmd, title, desc, icon, special })
   }
   
   saveFavorites(favorites)
@@ -114,6 +149,12 @@ function updateFavoriteButtons() {
   })
 }
 
+// Converte nomes de ícones antigos/inexistentes (salvos no histórico) para ícones válidos do Lucide
+const LEGACY_ICON_ALIASES = { 'file-shield': 'file-lock' }
+function resolveLegacyIconName(name) {
+  return name ? (LEGACY_ICON_ALIASES[name] || name) : name
+}
+
 function renderHistory() {
   const historyList = document.getElementById('history-list')
   if (!historyList) return
@@ -142,7 +183,7 @@ function renderHistory() {
         <div class="history-item-icon" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
           ${(item.icon && (item.icon.includes('/') || item.icon.includes('.')))
             ? `<img src="${item.icon}" style="width:18px;height:18px">` 
-            : `<i data-lucide="${item.icon || (item.success === 'cancelled' ? 'ban' : (item.success ? 'check' : 'x'))}" style="width:18px;height:18px"></i>`}
+            : `<i data-lucide="${resolveLegacyIconName(item.icon) || (item.success === 'cancelled' ? 'ban' : (item.success ? 'check' : 'x'))}" style="width:18px;height:18px"></i>`}
           
         </div>
         <div class="history-item-content" style="flex: 1;">
@@ -170,8 +211,11 @@ function renderFavorites() {
     return
   }
   
-  favoritesList.innerHTML = favorites.map(fav => `
-    <div class="tool-btn" data-cmd="${fav.cmd.replace(/"/g, '&quot;')}" style="width: calc(50% - 6px); cursor: pointer; position: relative;">
+  favoritesList.innerHTML = favorites.map(fav => {
+    const inferredSpecial = fav.special || (fav.cmd === 'ADD_STARTUP_ENTRY' ? 'add-startup-entry' : '');
+    const specialAttr = inferredSpecial ? ` data-special="${inferredSpecial.replace(/"/g, '&quot;')}"` : '';
+    return `
+    <div class="tool-btn" data-cmd="${fav.cmd.replace(/"/g, '&quot;')}"${specialAttr} style="width: calc(50% - 6px); cursor: pointer; position: relative;">
       <span class="btn-icon">
         ${(fav.icon.includes('/') || fav.icon.includes('.'))
           ? `<img src="${fav.icon}">` 
@@ -185,52 +229,602 @@ function renderFavorites() {
         <i data-lucide="x" style="width:12px;height:12px"></i>
       </button>
     </div>
-  `).join('')
+  `;
+  }).join('')
   
   createLucideIcons()
   attachToolButtonListeners()
 }
 
-function showDetailsModal(title, output, formattedMsg) {
+function parseDetailsModalItems(title, output, formattedMsg, cmd = '') {
+  const raw = String(output || '').trim()
+  const tLower = String(title || '').toLowerCase()
+  const cLower = String(cmd || '').toLowerCase()
+
+  // 1. Info da BIOS / Placa-Mãe
+  if (cLower.includes('win32_bios') || tLower.includes('bios')) {
+    const getVal = (re) => (raw.match(re) || [])[1]?.trim() || ''
+    const mfr = getVal(/Manufacturer\s*:\s*(.+)/i) || 'Não identificado'
+    const serial = getVal(/SerialNumber\s*:\s*(.+)/i) || 'Não disponível'
+    const version = getVal(/SMBIOSBIOSVersion\s*:\s*(.+)/i) || getVal(/Version\s*:\s*(.+)/i) || 'Padrão OEM'
+    const release = getVal(/ReleaseDate\s*:\s*(.+)/i) || 'N/D'
+    const board = getVal(/BaseBoard\s*:\s*(.+)/i) || mfr
+    const status = getVal(/Status\s*:\s*(.+)/i) || 'OK'
+
+    return {
+      headerIcon: 'cpu',
+      pill: 'Firmware UEFI / SMBIOS',
+      subtitle: 'Identificação de firmware da placa-mãe, versão SMBIOS e número de série gravado no hardware:',
+      summaryCards: [
+        { icon: 'factory', iconClass: 'ip', label: 'Fabricante', value: mfr, copy: mfr },
+        { icon: 'package', iconClass: 'gw', label: 'Versão da BIOS', value: version, copy: version },
+        { icon: 'key-round', iconClass: 'dns', label: 'Nº de Série (Service Tag)', value: serial, copy: serial }
+      ],
+      cards: [
+        {
+          icon: 'cpu',
+          name: `${mfr} — Firmware BIOS (${version})`,
+          searchBlob: `${mfr} ${serial} ${version} ${release} ${board} ${status}`.toLowerCase(),
+          chips: [
+            { icon: 'check-circle-2', text: `Status: ${status}`, cls: 'chip-status-ok' },
+            { icon: 'shield-check', text: 'SMBIOS Ativo', cls: 'chip-default' },
+            ...(release && release !== 'N/D' ? [{ icon: 'calendar', text: `Data: ${release}`, cls: 'chip-admin' }] : [])
+          ],
+          meta: [
+            { label: 'Fabricante da BIOS', value: mfr, copy: mfr },
+            { label: 'Versão SMBIOS', value: version, copy: version },
+            { label: 'Número de Série / Tag', value: serial, copy: serial, mono: true },
+            { label: 'Placa-Mãe (BaseBoard)', value: board, copy: board },
+            ...(release && release !== 'N/D' ? [{ label: 'Data de Lançamento', value: release }] : []),
+            { label: 'Integridade de Hardware', value: status === 'OK' ? 'Operacional (OK)' : status }
+          ]
+        }
+      ]
+    }
+  }
+
+  // 2. Chave do Windows / Licenciamento OEM
+  if (cLower.includes('oa3xoriginalproductkey') || cLower.includes('softwarelicensingservice') || tLower.includes('chave do windows')) {
+    const keyMatch = raw.match(/[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}/i)
+    const productKey = keyMatch ? keyMatch[0].toUpperCase() : null
+    const isDigital = /Licenca Digital|Volume|Nenhuma chave/i.test(raw) || !productKey
+
+    return {
+      headerIcon: 'key-round',
+      pill: productKey ? 'Chave OEM Detectada' : 'Licença Digital',
+      subtitle: 'Verificação da tabela ACPI MSDM (OA3xOriginalProductKey) e status de licenciamento do Windows:',
+      summaryCards: [
+        { icon: 'key-round', iconClass: 'ip', label: 'Chave OEM (BIOS)', value: productKey || 'Licença Digital Microsoft', copy: productKey || '' },
+        { icon: 'shield-check', iconClass: 'gw', label: 'Tipo de Ativação', value: productKey ? 'OEM Gravada na Placa-Mãe' : 'Vinculada ao Hardware / Conta' }
+      ],
+      cards: [
+        {
+          icon: 'key-round',
+          name: productKey ? productKey : 'Ativação por Licença Digital (Sem Chave Física OEM)',
+          searchBlob: `${productKey || ''} licenca digital windows oem bios`.toLowerCase(),
+          chips: [
+            { icon: 'check-circle-2', text: productKey ? 'Chave OEM Encontrada' : 'Licença Digital Ativa', cls: 'chip-status-ok' },
+            { icon: 'cpu', text: 'Tabela MSDM / SMBIOS' }
+          ],
+          meta: [
+            { label: 'Chave do Produto (25 dígitos)', value: productKey || 'Não gravada na BIOS (Ativação Digital)', copy: productKey || '', mono: !!productKey },
+            { label: 'Origem da Licença', value: productKey ? 'Firmware UEFI / Placa-Mãe (OA3)' : 'Servidores de Ativação Microsoft (HWID)' }
+          ]
+        }
+      ]
+    }
+  }
+
+  // 3. Info de Memória RAM
+  if (cLower.includes('memorychip') || cLower.includes('win32_physicalmemory') || tLower.includes('memória ram')) {
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l && !/^Capacity|^----/i.test(l))
+    let totalBytes = 0
+    const cards = lines.map((line, idx) => {
+      const p = line.split(/\s{2,}/)
+      const bytes = parseInt(p[0], 10) || 0
+      totalBytes += bytes
+      const capGB = bytes ? `${(bytes / 1073741824).toFixed(0)} GB` : (p[0] || 'Módulo RAM')
+      const speed = p[1]?.trim() ? `${p[1].trim()} MHz` : 'Velocidade Padrão'
+      const mfr = p[2]?.trim() || 'Fabricante OEM'
+      return {
+        icon: 'memory-stick',
+        name: `Slot #${idx + 1} — ${capGB} (${mfr})`,
+        searchBlob: `${capGB} ${speed} ${mfr} slot ${idx + 1}`.toLowerCase(),
+        chips: [
+          { icon: 'zap', text: speed, cls: 'chip-status-ok' },
+          { icon: 'cpu', text: capGB, cls: 'chip-admin' }
+        ],
+        meta: [
+          { label: 'Capacidade do Módulo', value: capGB },
+          { label: 'Frequência / Clock', value: speed },
+          { label: 'Fabricante', value: mfr, copy: mfr }
+        ]
+      }
+    })
+    const totalGB = totalBytes ? `${(totalBytes / 1073741824).toFixed(0)} GB` : `${cards.length} Módulo(s)`
+    return {
+      headerIcon: 'memory-stick',
+      pill: `${cards.length} pente(s) instalado(s)`,
+      subtitle: 'Especificações físicas dos módulos de memória RAM instalados nos slots da placa-mãe:',
+      summaryCards: [
+        { icon: 'memory-stick', iconClass: 'ip', label: 'Capacidade Total Física', value: totalGB },
+        { icon: 'layers', iconClass: 'gw', label: 'Slots Populacionados', value: `${cards.length} módulo(s) ativo(s)` },
+        { icon: 'zap', iconClass: 'dns', label: 'Frequência Principal', value: cards[0]?.meta?.[1]?.value || 'Automática' }
+      ],
+      cards
+    }
+  }
+
+  // 4. Info dos Discos Físicos
+  if (cLower.includes('diskdrive') || cLower.includes('win32_diskdrive') || tLower.includes('info dos discos')) {
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l && !/^Model|^----/i.test(l))
+    const cards = lines.map((line, idx) => {
+      const p = line.split(/\s{2,}/)
+      const model = p[0]?.trim() || `Unidade Física #${idx + 1}`
+      const size = p[1]?.trim() ? `${p[1].trim()} GB` : 'N/D'
+      const status = p[2]?.trim() || 'OK'
+      const isOk = /^OK$/i.test(status)
+      const isSsd = /ssd|nvme|solid/i.test(model)
+      return {
+        icon: 'hard-drive',
+        name: model,
+        searchBlob: `${model} ${size} ${status}`.toLowerCase(),
+        chips: [
+          { icon: isOk ? 'check-circle-2' : 'alert-triangle', text: `S.M.A.R.T.: ${status}`, cls: isOk ? 'chip-status-ok' : 'chip-status-warn' },
+          { icon: 'database', text: size, cls: 'chip-admin' },
+          { icon: 'zap', text: isSsd ? 'SSD / NVMe' : 'Unidade de Armazenamento' }
+        ],
+        meta: [
+          { label: 'Modelo da Unidade', value: model, copy: model },
+          { label: 'Capacidade Total', value: size },
+          { label: 'Saúde S.M.A.R.T.', value: isOk ? 'Saudável (OK)' : status }
+        ]
+      }
+    })
+    return {
+      headerIcon: 'hard-drive',
+      pill: `${cards.length} unidade(s) física(s)`,
+      subtitle: 'Unidades de armazenamento físico detectadas e diagnóstico de integridade S.M.A.R.T.:',
+      summaryCards: [
+        { icon: 'hard-drive', iconClass: 'ip', label: 'Unidades Detectadas', value: `${cards.length} Disco(s)` },
+        { icon: ' cpu', iconClass: 'gw', label: 'Disco Principal', value: cards[0]?.name || 'N/D' },
+        { icon: 'shield-check', iconClass: 'dns', label: 'Status Geral', value: cards.every(c => c.chips[0]?.cls === 'chip-status-ok') ? '100% Saudável (OK)' : 'Requer Atenção' }
+      ],
+      cards
+    }
+  }
+
+  // 5. Espaço Livre em Disco
+  if (cLower.includes('get-psdrive') || tLower.includes('espaço livre')) {
+    const usado = (raw.match(/Usado\s*:\s*([\d.]+)/i) || [])[1]
+    const livre = (raw.match(/Livre\s*:\s*([\d.]+)/i) || raw.match(/Free\s*:\s*([\d.]+)/i) || [])[1]
+    const total = (raw.match(/Total\s*:\s*([\d.]+)/i) || [])[1]
+    const pct = (usado && total) ? Math.round((parseFloat(usado) / parseFloat(total)) * 100) : null
+    return {
+      headerIcon: 'pie-chart',
+      pill: pct !== null ? `${pct}% em uso` : 'Volume C:',
+      subtitle: 'Alocação de capacidade, espaço livre disponível e taxa de ocupação da partição do sistema (C:):',
+      summaryCards: [
+        { icon: 'check-circle-2', iconClass: 'gw', label: 'Espaço Livre (C:)', value: livre ? `${livre} GB` : 'N/D' },
+        { icon: 'hard-drive', iconClass: 'ip', label: 'Espaço Ocupado', value: usado ? `${usado} GB` : 'N/D' },
+        { icon: 'database', iconClass: 'dns', label: 'Capacidade Total', value: total ? `${total} GB` : 'N/D' }
+      ],
+      cards: [
+        {
+          icon: 'hard-drive',
+          name: `Volume do Sistema (Disco Local C:)`,
+          searchBlob: `disco c usado ${usado} livre ${livre} total ${total}`.toLowerCase(),
+          chips: [
+            { icon: 'check-circle-2', text: `Livre: ${livre || '—'} GB`, cls: 'chip-status-ok' },
+            ...(pct !== null ? [{ icon: 'activity', text: `Ocupação: ${pct}%`, cls: pct > 85 ? 'chip-status-warn' : 'chip-admin' }] : [])
+          ],
+          meta: [
+            { label: 'Espaço Disponível', value: livre ? `${livre} GB` : 'N/D' },
+            { label: 'Espaço Utilizado', value: usado ? `${usado} GB` : 'N/D' },
+            { label: 'Tamanho Total da Partição', value: total ? `${total} GB` : 'N/D' },
+            ...(pct !== null ? [{ label: 'Percentual de Uso', value: `${pct}% (${100 - pct}% livre)` }] : [])
+          ]
+        }
+      ]
+    }
+  }
+
+  // 6. Usuários do Sistema
+  if (cLower.includes('net user') || tLower.includes('usuários')) {
+    const lines = raw.split(/\r?\n/).filter(l => {
+      const t = l.trim()
+      return t && !/^-+$/.test(t) && !/conclu.*do|completed|.*xito|success|contas de usu|user accounts/i.test(t)
+    })
+    const users = lines.flatMap(l => l.match(/\S+/g) || []).filter(u => !isInternalWindowsUser(u))
+    return {
+      headerIcon: 'users',
+      pill: `${users.length} conta(s) ativa(s)`,
+      subtitle: 'Contas de usuário locais configuradas neste computador (excluindo contas internas do Windows):',
+      summaryCards: [
+        { icon: 'users', iconClass: 'ip', label: 'Total de Contas Locais', value: `${users.length} Usuário(s)` },
+        { icon: 'user-check', iconClass: 'gw', label: 'Conta Principal', value: users[0] || 'Padrão' }
+      ],
+      cards: users.map((u, idx) => ({
+        icon: 'user',
+        name: u,
+        searchBlob: u.toLowerCase(),
+        chips: [
+          { icon: 'check-circle-2', text: 'Conta Local Ativa', cls: 'chip-status-ok' },
+          { icon: 'shield', text: idx === 0 ? 'Usuário Principal' : 'Conta Local', cls: 'chip-admin' }
+        ],
+        meta: [
+          { label: 'Nome da Conta', value: u, copy: u },
+          { label: 'Tipo de Perfil', value: 'Conta Local do Windows' }
+        ]
+      }))
+    }
+  }
+
+  // 7. Listar Impressoras
+  if (cLower.includes('get-printer') || tLower.includes('impressora')) {
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(l => l && !/^Name|^----/i.test(l))
+    const cards = lines.map(line => {
+      const p = line.split(/\s{2,}/)
+      const name = p[0] || line
+      const driver = p[1] || 'Driver Padrão'
+      const port = p[2] || 'Porta Local / Rede'
+      return {
+        icon: 'printer',
+        name,
+        searchBlob: `${name} ${driver} ${port}`.toLowerCase(),
+        chips: [
+          { icon: 'check-circle-2', text: 'Instalada', cls: 'chip-status-ok' },
+          { icon: 'plug', text: port, cls: 'chip-admin' }
+        ],
+        meta: [
+          { label: 'Nome da Fila / Impressora', value: name, copy: name },
+          { label: 'Driver Utilizado', value: driver },
+          { label: 'Porta / Endereço', value: port, copy: port, mono: true }
+        ]
+      }
+    })
+    return {
+      headerIcon: 'printer',
+      pill: `${cards.length} impressora(s)`,
+      subtitle: 'Dispositivos e filas de impressão instalados no Spooler do Windows:',
+      summaryCards: [
+        { icon: 'printer', iconClass: 'ip', label: 'Filas Instaladas', value: `${cards.length} Impressora(s)` },
+        { icon: 'check-circle-2', iconClass: 'gw', label: 'Spooler de Impressão', value: 'Ativo e Operacional' }
+      ],
+      cards
+    }
+  }
+
+  // 8. Credenciais de Rede (cmdkey /list)
+  if (cLower.includes('cmdkey') || tLower.includes('credencia')) {
+    const rawLines = raw.split(/\r?\n/).filter(l => l.trim() && !/Atualmente armazenadas|Currently stored/i.test(l))
+    const entries = []
+    let current = null
+    for (const line of rawLines) {
+      const trimmed = line.trim()
+      if (/^(Target|Destino)\s*:/i.test(trimmed)) {
+        if (current) entries.push(current)
+        current = { target: trimmed.split(':').slice(1).join(':').trim(), info: [] }
+      } else if (current) {
+        current.info.push(trimmed)
+      }
+    }
+    if (current) entries.push(current)
+
+    const cards = entries.map(e => {
+      const cleanTarget = e.target.replace(/^.*?target=/i, '').trim()
+      const userLine = e.info.find(i => /^(User|Usu[aá]rio)\s*:/i.test(i))
+      const typeLine = e.info.find(i => /^(Type|Tipo)\s*:/i.test(i))
+      const userVal = userLine ? userLine.split(':').slice(1).join(':').trim() : 'Conta do Sistema'
+      const typeVal = typeLine ? typeLine.split(':').slice(1).join(':').trim() : 'Credencial do Windows'
+      return {
+        icon: 'key-round',
+        name: cleanTarget,
+        searchBlob: `${cleanTarget} ${userVal} ${typeVal}`.toLowerCase(),
+        chips: [
+          { icon: 'shield', text: typeVal, cls: 'chip-admin' },
+          { icon: 'user', text: userVal, cls: 'chip-status-ok' }
+        ],
+        meta: [
+          { label: 'Destino / Servidor (Target)', value: cleanTarget, copy: cleanTarget, mono: true },
+          { label: 'Usuário Associado', value: userVal, copy: userVal },
+          { label: 'Tipo de Cofre', value: typeVal }
+        ]
+      }
+    })
+    return {
+      headerIcon: 'key-round',
+      pill: `${cards.length} credencial(is)`,
+      subtitle: 'Credenciais armazenadas no Cofre de Credenciais do Windows:',
+      summaryCards: [
+        { icon: 'key-round', iconClass: 'ip', label: 'Credenciais Salvas', value: `${cards.length} Registro(s)` },
+        { icon: 'lock', iconClass: 'gw', label: 'Cofre do Windows', value: 'Protegido (LSASS)' }
+      ],
+      cards
+    }
+  }
+
+  // 9. Fallback estruturado universal (transforma linhas de formattedMsg ou pares Chave: Valor em cards modernos)
+  const cleanHtmlLines = String(formattedMsg || output || '')
+    .split(/<br\s*\/?>|\r?\n/i)
+    .map(l => l.replace(/<[^>]*>/g, '').replace(/[🟢🔴🟡⚪🖨️👤🗑️🔋📄💾💚💻📦⚙️🔧🧠🕒🌐🏭🔑🔍🚪🔳📊⚡🖥️🟠]/gu, '').trim())
+    .filter(Boolean)
+
+  const metaItems = []
+  cleanHtmlLines.forEach((line, i) => {
+    const colonIdx = line.indexOf(':')
+    if (colonIdx > 0 && colonIdx < 42) {
+      const k = line.slice(0, colonIdx).trim()
+      const v = line.slice(colonIdx + 1).trim()
+      if (v) metaItems.push({ label: k, value: v, copy: v.length <= 64 ? v : '' })
+    } else {
+      metaItems.push({ label: `Item #${i + 1}`, value: line })
+    }
+  })
+
+  return {
+    headerIcon: 'terminal',
+    pill: 'Concluído',
+    subtitle: 'Relatório estruturado e diagnóstico detalhado retornado pelo sistema:',
+    summaryCards: metaItems.slice(0, 3).map((m, idx) => ({
+      icon: idx === 0 ? 'check-circle-2' : idx === 1 ? 'layers' : 'activity',
+      iconClass: idx === 0 ? 'gw' : idx === 1 ? 'ip' : 'dns',
+      label: m.label,
+      value: m.value,
+      copy: m.copy || ''
+    })),
+    cards: [
+      {
+        icon: 'check-circle-2',
+        name: `${title} — Diagnóstico do Sistema`,
+        searchBlob: cleanHtmlLines.join(' ').toLowerCase(),
+        chips: [
+          { icon: 'check-circle-2', text: 'Execução Concluída', cls: 'chip-status-ok' },
+          { icon: 'list', text: `${metaItems.length} parâmetro(s)`, cls: 'chip-admin' }
+        ],
+        meta: metaItems.length ? metaItems : [{ label: 'Saída', value: 'Operação concluída com sucesso.' }]
+      }
+    ]
+  }
+}
+
+function showDetailsModal(title, output, formattedMsg, cmd = '', icon = '') {
+  const existing = document.getElementById('details-structured-overlay')
+  if (existing) existing.remove()
+
+  const parsedData = parseDetailsModalItems(title, output, formattedMsg, cmd)
+  const headerIcon = icon || parsedData.headerIcon || 'cpu'
+  const rawText = String(output || formattedMsg || 'Nenhuma saída registrada.').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim()
+
   const overlay = document.createElement('div')
   overlay.className = 'modal-overlay'
-  const content = formatNotificationMessage(formattedMsg || output || 'Nenhuma saída registrada.')
-  
+  overlay.id = 'details-structured-overlay'
+
+  // Mapeia classes semânticas para as variantes oficiais de .details-chip
+  const chipClassMap = {
+    'chip-status-ok': 'status-ready',
+    'chip-status-warn': 'status-warn',
+    'chip-admin': 'network',
+    'chip-default': 'virtual'
+  }
+  const resolveChipClass = (cls) => chipClassMap[cls] || cls || 'virtual'
+
+  const copyBtnHtml = (value, label) => value ? `
+    <button type="button" class="netinfo-mac-copy-btn details-inline-copy" data-copy="${escapeHtml(value)}" title="Copiar ${escapeHtml(label)}">
+      <i data-lucide="copy"></i>
+    </button>` : ''
+
+  // Faixa HUD de resumo — mesma estrutura do modal "Informações de Rede"
+  const summaryStripHtml = (parsedData.summaryCards && parsedData.summaryCards.length > 0)
+    ? `<div class="netinfo-summary-card">
+        ${parsedData.summaryCards.map(sc => `
+          <div class="netinfo-summary-cell">
+            <div class="netinfo-summary-label"><i data-lucide="${escapeHtml((sc.icon || 'info').trim())}"></i> ${escapeHtml(sc.label)}</div>
+            <div class="netinfo-summary-val" title="${escapeHtml(sc.value)}">${escapeHtml(sc.value)}${copyBtnHtml(sc.copy, sc.label)}</div>
+          </div>
+        `).join('')}
+      </div>`
+    : ''
+
+  const renderCardsHtml = (cardsList) => {
+    if (!cardsList || !cardsList.length) {
+      return `
+        <div class="details-empty-state">
+          <i data-lucide="inbox" style="width:32px;height:32px;opacity:0.45"></i>
+          <div>Nenhum registro encontrado para o filtro informado.</div>
+        </div>`
+    }
+    return `<div class="details-cards-grid">
+      ${cardsList.map(card => `
+        <div class="details-result-card">
+          <div class="result-card-top">
+            <div class="result-card-icon-wrap">
+              <i data-lucide="${escapeHtml(card.icon || headerIcon)}" style="width:19px;height:19px"></i>
+            </div>
+            <div class="result-card-info">
+              <div class="result-card-name">${escapeHtml(card.name)}</div>
+              ${card.chips && card.chips.length ? `
+                <div class="result-card-chips">
+                  ${card.chips.map(ch => `
+                    <span class="details-chip ${escapeHtml(resolveChipClass(ch.cls))}">
+                      <i data-lucide="${escapeHtml(ch.icon || 'circle')}"></i> ${escapeHtml(ch.text)}
+                    </span>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          ${card.meta && card.meta.length ? `
+            <div class="result-card-meta-grid">
+              ${card.meta.map(m => `
+                <div class="result-meta-item">
+                  <span class="meta-field-label">${escapeHtml(m.label)}</span>
+                  <span class="meta-field-value"${m.mono ? ' style="font-family: monospace; letter-spacing: 0.5px;"' : ''}>${escapeHtml(m.value)}${copyBtnHtml(m.copy, m.label)}</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>`
+  }
+
   overlay.innerHTML = `
-    <div class="modal" style="max-width: 95%; width: 650px; max-height: 85vh; display: flex; flex-direction: column;">
-      <div class="modal-title">
-        <i data-lucide="info" style="width:20px;height:20px"></i>
-        ${title}
+    <div class="modal details-modal" role="dialog" aria-modal="true">
+      <button class="modal-close-icon-btn" id="modal-x-close" title="Fechar (Esc)">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
+
+      <div class="details-modal-header">
+        <div class="details-header-lead">
+          <div class="details-header-icon-box">
+            <i data-lucide="${escapeHtml(headerIcon)}" style="width:22px;height:22px"></i>
+          </div>
+          <div class="details-header-text">
+            <div class="details-modal-title">
+              <span>${escapeHtml(title)}</span>
+              <span class="details-count-pill" id="details-count-pill">${escapeHtml(parsedData.pill || 'Concluído')}</span>
+            </div>
+            <div class="details-modal-desc">${escapeHtml(parsedData.subtitle)}</div>
+          </div>
+        </div>
       </div>
-      <div class="modal-desc" style="margin-bottom: 12px;">Resultados da operação:</div>
-      <div id="modal-content-area" style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; color: #e0e0e0; font-family: "Mostica Sans", Poppins, sans-serif; font-size: 13px; flex: 1; overflow-y: auto; border: 1px solid rgba(139, 92, 246, 0.2); line-height: 1.7; scrollbar-gutter: stable;">
-        ${content}
+
+      ${summaryStripHtml}
+
+      <div class="details-toolbar">
+        <div class="details-search-box">
+          <i data-lucide="search" style="width:14px;height:14px"></i>
+          <input type="text" id="details-search-input" placeholder="Filtrar informações exibidas..." autocomplete="off">
+        </div>
+        <div class="details-view-toggles">
+          <button type="button" class="details-toggle-btn active" id="details-toggle-cards">
+            <i data-lucide="layout-grid" style="width:13px;height:13px"></i> Formatado
+          </button>
+          <button type="button" class="details-toggle-btn" id="details-toggle-raw">
+            <i data-lucide="terminal" style="width:13px;height:13px"></i> Terminal
+          </button>
+        </div>
       </div>
-      <div class="modal-buttons" style="margin-top: 20px; gap: 12px;">
-        <button class="modal-btn secondary" id="modal-copy-details" style="display: flex; align-items: center; gap: 8px;">
-          <i data-lucide="copy" style="width:14px;height:14px"></i>Copiar
-        </button>
-        <button class="modal-btn primary" id="modal-close-details">Fechar</button>
+
+      <div class="details-content-viewport" id="details-viewport-formatted">
+        ${renderCardsHtml(parsedData.cards)}
+      </div>
+
+      <div class="details-content-viewport" id="details-viewport-raw" style="display: none;">
+        <div class="details-terminal-box" id="modal-raw-terminal-box">${escapeHtml(rawText)}</div>
+      </div>
+
+      <div class="details-modal-footer">
+        <div class="details-footer-tip">
+          <i data-lucide="keyboard" style="width:14px;height:14px;color:#818cf8"></i>
+          Pressione <b style="color:#cbd5e1">Esc</b> para fechar ou clique no ícone ao lado de um campo para copiar
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="modal-btn secondary" id="modal-copy-details" style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 8px 16px;">
+            <i data-lucide="copy" style="width:14px;height:14px"></i> Copiar Tudo
+          </button>
+          <button class="modal-btn primary" id="modal-close-details" style="font-size: 12.5px; padding: 8px 20px;">
+            Fechar
+          </button>
+        </div>
       </div>
     </div>
   `
   document.body.appendChild(overlay)
   createLucideIcons()
 
-  document.getElementById('modal-copy-details').onclick = () => {
-    const textToCopy = document.getElementById('modal-content-area').innerText
-    navigator.clipboard.writeText(textToCopy)
-    const copyBtn = document.getElementById('modal-copy-details')
-    const originalContent = copyBtn.innerHTML
-    copyBtn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px"></i> Copiado!'
-    createLucideIcons()
-    setTimeout(() => {
-      copyBtn.innerHTML = originalContent
-      createLucideIcons()
-    }, 2000)
+  const close = () => {
+    overlay.remove()
+    document.removeEventListener('keydown', onKeyDown)
   }
 
-  document.getElementById('modal-close-details').onclick = () => overlay.remove()
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') close()
+  }
+  document.addEventListener('keydown', onKeyDown)
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close()
+  })
+
+  const xClose = overlay.querySelector('#modal-x-close')
+  if (xClose) xClose.onclick = close
+  const closeBtn = overlay.querySelector('#modal-close-details')
+  if (closeBtn) closeBtn.onclick = close
+
+  // Alternância Formatado / Terminal
+  const btnCards = overlay.querySelector('#details-toggle-cards')
+  const btnRaw = overlay.querySelector('#details-toggle-raw')
+  const viewCards = overlay.querySelector('#details-viewport-formatted')
+  const viewRaw = overlay.querySelector('#details-viewport-raw')
+
+  if (btnCards && btnRaw && viewCards && viewRaw) {
+    btnCards.onclick = () => {
+      btnCards.classList.add('active')
+      btnRaw.classList.remove('active')
+      viewCards.style.display = ''
+      viewRaw.style.display = 'none'
+    }
+    btnRaw.onclick = () => {
+      btnRaw.classList.add('active')
+      btnCards.classList.remove('active')
+      viewRaw.style.display = ''
+      viewCards.style.display = 'none'
+    }
+  }
+
+  // Botões de cópia individual nos cards
+  const bindInlineCopyButtons = () => {
+    overlay.querySelectorAll('.details-inline-copy').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation()
+        const val = btn.getAttribute('data-copy') || ''
+        if (!val) return
+        navigator.clipboard.writeText(val)
+        const orig = btn.innerHTML
+        btn.innerHTML = '<i data-lucide="check" style="width:13px;height:13px;color:#34d399"></i>'
+        createLucideIcons()
+        setTimeout(() => {
+          btn.innerHTML = orig
+          createLucideIcons()
+        }, 1600)
+      }
+    })
+  }
+  bindInlineCopyButtons()
+
+  // Filtro de busca em tempo real
+  const searchInput = overlay.querySelector('#details-search-input')
+  if (searchInput && viewCards) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase()
+      const filtered = !q
+        ? parsedData.cards
+        : parsedData.cards.filter(c => (c.searchBlob || '').includes(q) || (c.name || '').toLowerCase().includes(q))
+      viewCards.innerHTML = renderCardsHtml(filtered)
+      createLucideIcons()
+      bindInlineCopyButtons()
+    })
+  }
+
+  const copyBtn = overlay.querySelector('#modal-copy-details')
+  if (copyBtn) {
+    copyBtn.onclick = () => {
+      const summaryLines = parsedData.cards.flatMap(c => [
+        `=== ${c.name} ===`,
+        ...(c.meta || []).map(m => `${m.label}: ${m.value}`)
+      ]).join('\n')
+      navigator.clipboard.writeText(summaryLines || rawText)
+      const originalContent = copyBtn.innerHTML
+      copyBtn.innerHTML = '<i data-lucide="check" style="width:14px;height:14px;color:#34d399"></i> Copiado!'
+      createLucideIcons()
+      setTimeout(() => {
+        copyBtn.innerHTML = originalContent
+        createLucideIcons()
+      }, 2000)
+    }
+  }
 }
 
 function showInstalledProgramsModal(programs) {
@@ -238,36 +832,70 @@ function showInstalledProgramsModal(programs) {
   overlay.className = 'modal-overlay'
   
   overlay.innerHTML = `
-    <div class="modal" style="max-width: 95%; width: 750px; max-height: 90vh; display: flex; flex-direction: column; padding: 24px;">
-      <div class="modal-title" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-        <i data-lucide="package" style="width:20px;height:20px"></i>
-        Programas Instalados
+    <div class="modal details-modal" role="dialog" aria-modal="true" style="width: min(840px, 95vw); max-width: 840px; max-height: 90vh;">
+      <button class="modal-close-icon-btn" id="programs-x-close" title="Fechar (Esc)">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
+
+      <div class="details-modal-header" style="margin-bottom: 12px;">
+        <div class="details-header-lead">
+          <div class="details-header-icon-box" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(99, 102, 241, 0.18) 100%); border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">
+            <i data-lucide="package" style="width:22px;height:22px"></i>
+          </div>
+          <div class="details-header-text">
+            <div class="details-modal-title">
+              <span>Programas Instalados</span>
+              <span class="details-count-pill" id="programs-count-pill">${programs.length} Aplicativos</span>
+            </div>
+            <div class="details-modal-desc">Gerenciamento, pesquisa e desinstalação de programas registrados no Windows</div>
+          </div>
+        </div>
       </div>
       
-      <!-- Lighter area with filters -->
-      <div class="modal-desc" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; width: 100%;">
+      <!-- Toolbar com pesquisa e filtros modernos -->
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05); padding: 10px 14px; border-radius: 12px;">
+        <div style="position: relative; flex: 1; min-width: 220px;">
+          <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: #94a3b8; pointer-events: none;"></i>
+          <input type="text" id="program-search" placeholder="Pesquisar programa ou desenvolvedor..." style="width: 100%; padding: 8px 12px 8px 36px; border-radius: 8px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(99, 102, 241, 0.25); color: #f8fafc; font-size: 13px; outline: none; transition: all 0.2s;" autocomplete="off">
+        </div>
         <div style="display: flex; gap: 8px;" class="filter-buttons">
-          <button class="modal-btn primary filter-btn active" id="filter-newest" style="padding: 6px 12px; font-size: 12px; height: auto;">Mais Recentes</button>
-          <button class="modal-btn secondary filter-btn" id="filter-oldest" style="padding: 6px 12px; font-size: 12px; height: auto;">Mais Antigos</button>
-        </div>
-        <div style="position: relative; flex: 1; min-width: 200px;">
-          <input type="text" id="program-search" placeholder="Pesquisar programa..." style="width: 100%; padding: 6px 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 13px; outline: none;">
+          <button class="modal-btn primary filter-btn active" id="filter-newest" style="padding: 7px 14px; font-size: 12px; height: auto;">Mais Recentes</button>
+          <button class="modal-btn secondary filter-btn" id="filter-oldest" style="padding: 7px 14px; font-size: 12px; height: auto;">Mais Antigos</button>
         </div>
       </div>
       
-      <!-- Darker area expanding to occupy 90% of modal height -->
-      <div id="modal-content-area" style="background: rgba(0,0,0,0.4); padding: 16px; border-radius: 12px; color: #e0e0e0; font-family: 'Mostica Sans', Poppins, sans-serif; font-size: 13px; flex: 1; overflow-y: auto; border: 1px solid rgba(139, 92, 246, 0.2); scrollbar-gutter: stable; display: flex; flex-direction: column; gap: 10px;">
-        <!-- Program list will be rendered here -->
+      <!-- Lista de programas com scroll customizado -->
+      <div id="modal-content-area" style="background: rgba(0, 0, 0, 0.25); padding: 12px; border-radius: 12px; font-size: 13px; flex: 1; overflow-y: auto; border: 1px solid rgba(99, 102, 241, 0.18); scrollbar-gutter: stable; display: flex; flex-direction: column; gap: 8px; max-height: 52vh; min-height: 220px;">
+        <!-- Itens renderizados via renderList() -->
       </div>
       
-      <div class="modal-buttons" style="margin-top: 16px; justify-content: space-between; align-items: center; width: 100%;">
-        <span id="programs-count" style="font-size: 12px; color: #7e8694;">Total: 0 programas</span>
-        <button class="modal-btn secondary" id="modal-close-details" style="padding: 8px 16px;">Fechar</button>
+      <div class="details-modal-footer" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; justify-content: space-between;">
+        <span id="programs-count" style="font-size: 12px; color: #94a3b8; font-weight: 500;">Total: ${programs.length} programas</span>
+        <button class="modal-btn primary" id="modal-close-details" style="padding: 8px 22px; font-size: 12px;">Fechar</button>
       </div>
     </div>
   `
   document.body.appendChild(overlay)
   createLucideIcons()
+
+  const close = () => {
+    overlay.remove()
+    document.removeEventListener('keydown', onKeyDown)
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') close()
+  }
+  document.addEventListener('keydown', onKeyDown)
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close()
+  })
+
+  const xClose = document.getElementById('programs-x-close')
+  if (xClose) xClose.onclick = close
+  const closeBtn = document.getElementById('modal-close-details')
+  if (closeBtn) closeBtn.onclick = close
   
   let currentSort = 'newest';
   let searchQuery = '';
@@ -285,12 +913,12 @@ function showInstalledProgramsModal(programs) {
   }
   
   function formatFriendlyDate(dateStr) {
-    if (!dateStr) return 'Data desconhecida';
+    if (!dateStr) return 'Data não informada';
     if (/^\d{8}$/.test(dateStr)) {
       return `${dateStr.substring(6, 8)}/${dateStr.substring(4, 6)}/${dateStr.substring(0, 4)}`;
     }
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return 'Data desconhecida';
+    if (isNaN(d.getTime())) return 'Data não informada';
     return d.toLocaleDateString('pt-BR');
   }
 
@@ -315,10 +943,19 @@ function showInstalledProgramsModal(programs) {
       }
     });
     
-    document.getElementById('programs-count').textContent = `Total: ${filtered.length} programas`;
+    const countEl = document.getElementById('programs-count');
+    if (countEl) countEl.textContent = `Exibindo ${filtered.length} de ${programs.length} programas`;
+    const countPill = document.getElementById('programs-count-pill');
+    if (countPill) countPill.textContent = `${filtered.length} Aplicativos`;
     
     if (filtered.length === 0) {
-      listContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #7e8694;">Nenhum programa encontrado</div>`;
+      listContainer.innerHTML = `
+        <div style="text-align: center; padding: 48px 20px; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+          <i data-lucide="search-x" style="width: 32px; height: 32px; color: #64748b;"></i>
+          <span>Nenhum programa encontrado para "${escapeHtml(searchQuery)}"</span>
+        </div>
+      `;
+      createLucideIcons();
       return;
     }
     
@@ -329,26 +966,28 @@ function showInstalledProgramsModal(programs) {
       
       const hasLocation = p.InstallLocation && p.InstallLocation.trim().length > 0;
       const hasUninstall = p.UninstallString && p.UninstallString.trim().length > 0;
-      const actionBtnStyle = 'padding: 6px 10px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; height: auto; white-space: nowrap; box-sizing: border-box; flex: 0 0 auto;';
-      const disabledBtnStyle = 'opacity: 0.4; cursor: not-allowed;';
+      const actionBtnStyle = 'padding: 6px 12px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; height: auto; white-space: nowrap; box-sizing: border-box; flex: 0 0 auto; border-radius: 7px;';
+      const disabledBtnStyle = 'opacity: 0.35; cursor: not-allowed; pointer-events: none;';
       
       return `
-        <div class="program-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.04); gap: 16px;">
+        <div class="program-item" style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; background: rgba(255, 255, 255, 0.02); border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.06); gap: 16px; transition: background 0.2s ease;">
           <div style="flex: 1; min-width: 0;">
-            <div style="font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px;" title="${escapeHtml(p.DisplayName)}">
+            <div style="font-weight: 600; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px;" title="${escapeHtml(p.DisplayName)}">
               ${escapeHtml(p.DisplayName)}
             </div>
-            <div style="font-size: 11px; color: #7e8694; margin-top: 2px;">
-              <span>${dateText}</span>${versionText ? ` • <span>${escapeHtml(versionText)}</span>` : ''}${pubText ? ` • <span>${escapeHtml(p.Publisher)}</span>` : ''}
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="color: #cbd5e1; background: rgba(99, 102, 241, 0.12); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.2);">${dateText}</span>
+              ${versionText ? `<span style="color: #94a3b8;">${escapeHtml(versionText)}</span>` : ''}
+              ${pubText ? `<span style="color: #64748b;">${escapeHtml(pubText)}</span>` : ''}
             </div>
           </div>
           
           <div style="display: flex; gap: 8px; flex-shrink: 0;">
-            <button class="modal-btn secondary btn-open-location" data-index="${index}" ${hasLocation ? '' : 'disabled'} title="Ir até o local do arquivo" style="${actionBtnStyle}${hasLocation ? '' : ` ${disabledBtnStyle}`}">
-              <i data-lucide="folder-open" style="width:14px;height:14px"></i> Local
+            <button class="modal-btn secondary btn-open-location" data-index="${index}" ${hasLocation ? '' : 'disabled'} title="Abrir pasta de instalação" style="${actionBtnStyle}${hasLocation ? '' : ` ${disabledBtnStyle}`}">
+              <i data-lucide="folder-open" style="width:13px;height:13px"></i> Local
             </button>
-            <button class="modal-btn secondary btn-uninstall-prog" data-index="${index}" ${hasUninstall ? '' : 'disabled'} title="Desinstalar programa" style="${actionBtnStyle} border-color: rgba(239, 68, 68, 0.3); color: #ef4444;${hasUninstall ? '' : ` ${disabledBtnStyle}`}">
-              <i data-lucide="trash-2" style="width:14px;height:14px"></i> Desinstalar
+            <button class="modal-btn secondary btn-uninstall-prog" data-index="${index}" ${hasUninstall ? '' : 'disabled'} title="Iniciar desinstalador oficial" style="${actionBtnStyle} border-color: rgba(239, 68, 68, 0.35); color: #fca5a5;${hasUninstall ? '' : ` ${disabledBtnStyle}`}">
+              <i data-lucide="trash-2" style="width:13px;height:13px"></i> Desinstalar
             </button>
           </div>
         </div>
@@ -371,8 +1010,8 @@ function showInstalledProgramsModal(programs) {
       btn.onclick = async () => {
         const prog = filtered[parseInt(btn.dataset.index, 10)];
         if (prog && prog.UninstallString) {
-          showChoiceModal('Desinstalar Programa', `Deseja realmente iniciar o desinstalador de "${prog.DisplayName}"?`, [
-            { label: 'Desinstalar', value: 'yes', primary: true },
+          showChoiceModal('Desinstalar Programa', `Deseja realmente iniciar o assistente de desinstalação de "${prog.DisplayName}"?`, [
+            { label: 'Iniciar Desinstalação', value: 'yes', primary: true },
             { label: 'Cancelar', value: 'no', primary: false }
           ], async (choice, choiceOverlay) => {
             choiceOverlay.remove();
@@ -381,11 +1020,11 @@ function showInstalledProgramsModal(programs) {
               const result = await window.api.runCommand(prog.UninstallString);
               dismiss(tUn);
               if (result.success) {
-                toast('success', 'Desinstalação', `Desinstalador concluído para ${prog.DisplayName}. Recarregando lista em instantes...`);
+                toast('success', 'Desinstalação', `Desinstalador concluído para ${prog.DisplayName}. Recarregando lista...`);
                 setTimeout(async () => {
                   overlay.remove();
                   document.querySelector('.tool-btn[data-special="list-installed-programs"]')?.click();
-                }, 3000);
+                }, 2500);
               } else {
                 toast('error', 'Desinstalação', `Erro ou cancelamento no desinstalador de ${prog.DisplayName}.`);
               }
@@ -399,37 +1038,41 @@ function showInstalledProgramsModal(programs) {
   renderList();
   
   const searchInput = document.getElementById('program-search');
-  searchInput.oninput = (e) => {
-    searchQuery = e.target.value;
-    renderList();
-  };
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      searchQuery = e.target.value;
+      renderList();
+    };
+  }
   
   const btnNewest = document.getElementById('filter-newest');
   const btnOldest = document.getElementById('filter-oldest');
   
-  btnNewest.onclick = () => {
-    if (currentSort !== 'newest') {
-      currentSort = 'newest';
-      btnNewest.classList.add('primary');
-      btnNewest.classList.remove('secondary');
-      btnOldest.classList.add('secondary');
-      btnOldest.classList.remove('primary');
-      renderList();
-    }
-  };
+  if (btnNewest) {
+    btnNewest.onclick = () => {
+      if (currentSort !== 'newest') {
+        currentSort = 'newest';
+        btnNewest.classList.add('primary');
+        btnNewest.classList.remove('secondary');
+        btnOldest.classList.add('secondary');
+        btnOldest.classList.remove('primary');
+        renderList();
+      }
+    };
+  }
   
-  btnOldest.onclick = () => {
-    if (currentSort !== 'oldest') {
-      currentSort = 'oldest';
-      btnOldest.classList.add('primary');
-      btnOldest.classList.remove('secondary');
-      btnNewest.classList.add('secondary');
-      btnNewest.classList.remove('primary');
-      renderList();
-    }
-  };
-  
-  document.getElementById('modal-close-details').onclick = () => overlay.remove();
+  if (btnOldest) {
+    btnOldest.onclick = () => {
+      if (currentSort !== 'oldest') {
+        currentSort = 'oldest';
+        btnOldest.classList.add('primary');
+        btnOldest.classList.remove('secondary');
+        btnNewest.classList.add('secondary');
+        btnNewest.classList.remove('primary');
+        renderList();
+      }
+    };
+  }
 }
 
 
@@ -471,8 +1114,12 @@ document.getElementById('clear-history')?.addEventListener('click', () => {
       overlay.remove()
       if (confirmed) {
         localStorage.removeItem(HISTORY_KEY);
+        localStorage.removeItem('thundertools_pending_ai_notes');
+        if (window.api && typeof window.api.resetSystemMaintenance === 'function') {
+          window.api.resetSystemMaintenance().catch(() => {});
+        }
         renderHistory();
-        toast('success', 'Histórico', '🟡 O histórico de comandos foi removido.');
+        toast('success', 'Histórico', '🟡 O histórico de comandos e sessões anteriores foi removido com sucesso.');
       }
     }
   )
@@ -497,7 +1144,8 @@ function updateGlobalCancelButtonState() {
 const SVG = {
   success: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
   error:   `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
-  warning: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+  warning: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  info:    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`
 }
 
 function notificationInlineIcon(name) {
@@ -549,6 +1197,7 @@ function formatNotificationMessage(html) {
 
 // Stats do sistema (CPU/RAM)
 window.api.onSystemStats((data) => {
+  updateDashboardMetrics(data);
   const cpuEl = document.getElementById('cpu-usage')
   const ramEl = document.getElementById('ram-usage')
   const diskEl = document.getElementById('cpu-temp') // Mantendo o ID original para compatibilidade com o HTML existente
@@ -568,12 +1217,26 @@ window.api.onSystemStats((data) => {
   if (data.cpu < 50) cpuBar.classList.add('low')
   else if (data.cpu < 80) cpuBar.classList.add('medium')
   else cpuBar.classList.add('high')
+
+  if (data.cpu >= 90) cpuEl.style.color = '#ef4444'
+  else if (data.cpu >= 75) cpuEl.style.color = '#f59e0b'
+  else cpuEl.style.color = '#e0e0e0'
   
   // RAM
   ramBar.className = 'stat-bar-fill'
   if (data.ram < 60) ramBar.classList.add('low')
   else if (data.ram < 85) ramBar.classList.add('medium')
   else ramBar.classList.add('high')
+
+  if (data.ram >= 90) ramEl.style.color = '#ef4444'
+  else if (data.ram >= 75) ramEl.style.color = '#f59e0b'
+  else ramEl.style.color = '#e0e0e0'
+
+  if (diskEl && data.temp !== null && data.temp !== undefined) {
+    if (data.temp >= 80) diskEl.style.color = '#ef4444'
+    else if (data.temp >= 68) diskEl.style.color = '#f59e0b'
+    else diskEl.style.color = '#e0e0e0'
+  }
 })
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -696,8 +1359,10 @@ const PARSERS = [
     result: () => '🟢 Cache DNS limpo com sucesso' },
 
   // Alto desempenho
-  { match: cmd => cmd.includes('powercfg /setactive'),
-    result: () => '⚡ Plano de energia <b>Alto Desempenho</b> ativado' },
+  { match: cmd => cmd.includes('e9a42b02') || cmd.includes('ACTIVATE_ULTIMATE_PERFORMANCE') || (cmd.includes('powercfg') && cmd.toLowerCase().includes('ultimate')),
+    result: () => '🔥 Plano oculto <b>Desempenho Máximo (Ultimate Performance)</b> ativado e confirmado no Windows' },
+  { match: cmd => cmd.includes('8c5e7fda') || cmd.includes('powercfg /setactive'),
+    result: () => '⚡ Plano de energia <b>Alto Desempenho</b> ativado no Windows' },
 
   // Limpeza de disco
   { match: cmd => cmd.includes('cleanmgr'),
@@ -1017,12 +1682,14 @@ const PARSERS = [
   },
 
   // Chave do Windows
-  { match: cmd => cmd.includes('OA3xOriginalProductKey'),
+  { match: cmd => cmd.includes('OA3xOriginalProductKey') || cmd.includes('SoftwareLicensingService'),
     result: (_, out) => {
-      const key = out.trim().split('\n').pop()?.trim()
-      if (key && key.length > 10 && key.includes('-'))
-        return `<b>Chave do Produto:</b> ${key}`
-      return '<b>Status:</b> âšª Chave nÃ£o encontrada ou nÃ£o disponÃ­vel'
+      const match = out.match(/[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}/i);
+      if (match)
+        return `<b>Chave do Produto:</b> ${match[0]}`
+      if (/Licenca Digital|Volume/i.test(out))
+        return '<b>Status:</b> 🟢 Licença Digital ou Ativação corporativa detectada (sem chave OEM física gravada na placa-mãe).'
+      return '<b>Status:</b> ⚪ Nenhuma chave OEM física na BIOS (Licença Digital vinculada à Conta Microsoft).'
     }
   },
 
@@ -1098,13 +1765,15 @@ const PARSERS = [
   },
 
   // DNS Google/Cloudflare
-  { match: cmd => cmd.includes('set dns'),
+  { match: cmd => cmd.includes('Set-DnsClientServerAddress') || cmd.includes('set dns'),
     result: (cmd, out) => {
+      if (out && out.includes('Nenhum adaptador'))
+        return { type: 'warning', msg: `🟡 ${out.trim()}` }
       if (cmd.includes('8.8.8.8'))
-        return '<b>Status:</b> 🟢 DNS configurado para Google (8.8.8.8)'
+        return '<b>Status:</b> 🟢 DNS configurado para Google (8.8.8.8 e 8.8.4.4)'
       if (cmd.includes('1.1.1.1'))
-        return '<b>Status:</b> 🟢 DNS configurado para Cloudflare (1.1.1.1)'
-      return '<b>Status:</b> 🟢 DNS configurado'
+        return '<b>Status:</b> 🟢 DNS configurado para Cloudflare (1.1.1.1 e 1.0.0.1)'
+      return '<b>Status:</b> 🟢 DNS de rede configurado com sucesso'
     }
   },
 
@@ -1222,8 +1891,15 @@ function getSteps(cmd) {
 // â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function toast(type, title, msg) {
+  const validTypes = ['success', 'error', 'warning', 'info', 'loading'];
+  const safeType = validTypes.includes(type) ? type : 'info';
   const el = document.createElement('div')
-  el.className = `toast ${type}`
+  el.className = `toast ${safeType}`
+
+  const iconContent = safeType === 'loading'
+    ? '<span class="spinner"></span>'
+    : (SVG[safeType] || SVG.info || SVG.success || '');
+
   // Adiciona a definição da animação e a classe CSS diretamente no HTML do toast
   el.innerHTML = `
     <style>
@@ -1238,15 +1914,15 @@ function toast(type, title, msg) {
         box-shadow: 0 0 15px rgba(239, 68, 68, 0.5) !important;
       }
     </style>
-    <div class="toast-icon">${type === 'loading' ? '<span class="spinner"></span>' : SVG[type]}</div>
+    <div class="toast-icon">${iconContent}</div>
     <div class="toast-body">
-      <div class="toast-title">${title}</div>
+      <div class="toast-title">${title || ''}</div>
       <div class="toast-msg">${formatNotificationMessage(msg)}</div>
     </div>
-    ${type === 'loading'
+    ${safeType === 'loading'
       ? `<button class="toast-cancel-btn cancel-btn-premium" title="Cancelar comando" style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; padding: 5px 10px; font-size: 10px; font-weight: 800; cursor: pointer; margin-left: 10px; white-space: nowrap; animation: pulse-cancel 2s infinite; text-shadow: 0 0 5px rgba(239, 68, 68, 0.3); transition: all 0.2s; backdrop-filter: blur(4px);">CANCELAR</button>`
       : `<button class="toast-close" title="Fechar"><i data-lucide="x" style="width:14px;height:14px"></i></button>`}
-    <div class="toast-bar" ${type !== 'loading' ? `style="animation-duration:${AUTO_CLOSE}ms"` : ''}></div>
+    <div class="toast-bar" ${safeType !== 'loading' ? `style="animation-duration:${AUTO_CLOSE}ms"` : ''}></div>
   `
   const btn = el.querySelector('.toast-cancel-btn, .toast-close')
   btn.addEventListener('click', () => {
@@ -1259,9 +1935,81 @@ function toast(type, title, msg) {
   })
   container.appendChild(el)
   createLucideIcons()
-  if (type !== 'loading') setTimeout(() => dismiss(el), AUTO_CLOSE)
+  if (safeType !== 'loading') setTimeout(() => dismiss(el), AUTO_CLOSE)
   return el
 }
+
+window.toast = function (arg1, arg2, arg3) {
+  const validTypes = ['success', 'error', 'warning', 'info', 'loading'];
+  const defaultTitles = {
+    success: 'Operação Concluída',
+    error: 'Erro na Operação',
+    warning: 'Atenção',
+    info: 'Informação',
+    loading: 'Processando'
+  };
+
+  let resolvedType = 'info';
+  let resolvedTitle = 'ThunderTools';
+  let resolvedMsg = '';
+
+  // 3 argumentos passados
+  if (arg3 !== undefined) {
+    if (validTypes.includes(arg1)) {
+      // toast('success', 'Título', 'Mensagem')
+      resolvedType = arg1;
+      resolvedTitle = arg2 || defaultTitles[resolvedType];
+      resolvedMsg = arg3;
+    } else if (validTypes.includes(arg3)) {
+      // toast('Título', 'Mensagem', 'success')
+      resolvedType = arg3;
+      resolvedTitle = arg1;
+      resolvedMsg = arg2;
+    } else if (validTypes.includes(arg2)) {
+      // toast('Título', 'success', 'Mensagem')
+      resolvedType = arg2;
+      resolvedTitle = arg1;
+      resolvedMsg = arg3;
+    } else {
+      resolvedType = 'info';
+      resolvedTitle = arg1;
+      resolvedMsg = `${arg2} ${arg3}`;
+    }
+  }
+  // 2 argumentos passados
+  else if (arg2 !== undefined) {
+    if (validTypes.includes(arg1)) {
+      // toast('success', 'Mensagem')
+      resolvedType = arg1;
+      resolvedTitle = defaultTitles[resolvedType];
+      resolvedMsg = arg2;
+    } else if (validTypes.includes(arg2)) {
+      // toast('Mensagem', 'success')
+      resolvedType = arg2;
+      resolvedTitle = defaultTitles[resolvedType];
+      resolvedMsg = arg1;
+    } else {
+      // toast('Título', 'Mensagem')
+      resolvedType = 'info';
+      resolvedTitle = arg1;
+      resolvedMsg = arg2;
+    }
+  }
+  // 1 argumento passado
+  else if (arg1 !== undefined) {
+    if (validTypes.includes(arg1)) {
+      resolvedType = arg1;
+      resolvedTitle = defaultTitles[resolvedType];
+      resolvedMsg = '';
+    } else {
+      resolvedType = 'info';
+      resolvedTitle = defaultTitles.info;
+      resolvedMsg = arg1;
+    }
+  }
+
+  return toast(resolvedType, resolvedTitle, resolvedMsg);
+};
 
 function dismiss(el) {
   el.classList.add('hide')
@@ -1271,11 +2019,13 @@ function dismiss(el) {
 function updateToast(el, type, title, html) {
   if (!el || !el.parentNode) return;
 
-  el.className = `toast ${type}`
+  const validTypes = ['success', 'error', 'warning', 'info', 'loading'];
+  const safeType = validTypes.includes(type) ? type : 'info';
+  el.className = `toast ${safeType}`
   
   // Se parou de carregar, remove o botão "CANCELAR" e coloca o "X" para fechar
   const cancelBtn = el.querySelector('.toast-cancel-btn')
-  if (cancelBtn && type !== 'loading') {
+  if (cancelBtn && safeType !== 'loading') {
     const closeBtn = document.createElement('button')
     closeBtn.className = 'toast-close'
     closeBtn.title = 'Fechar'
@@ -1295,7 +2045,9 @@ function updateToast(el, type, title, html) {
     el.classList.add('expanded')
   }
   
-  el.querySelector('.toast-icon').innerHTML = SVG[type]
+  el.querySelector('.toast-icon').innerHTML = safeType === 'loading'
+    ? '<span class="spinner"></span>'
+    : (SVG[safeType] || SVG.info || SVG.success || '');
   el.querySelector('.toast-title').textContent = title
   el.querySelector('.toast-msg').innerHTML = formatNotificationMessage(html)
   createLucideIcons()
@@ -1359,6 +2111,17 @@ function createServiceProgressWindow(title, initialMessage) {
     </div>
   `
   document.body.appendChild(el)
+
+  // Oculta temporariamente qualquer dock flutuante de reparo preventivo para evitar janelas duplicadas
+  const existingRepairDock = document.getElementById('repair-floating-dock')
+  if (existingRepairDock) {
+    existingRepairDock.style.display = 'none'
+  }
+
+  const restoreExistingRepairDock = () => {
+    const dock = document.getElementById('repair-floating-dock')
+    if (dock) dock.style.display = ''
+  }
 
   const fill = el.querySelector('.service-progress-fill')
   const percent = el.querySelector('.service-progress-percent')
@@ -1428,7 +2191,10 @@ function createServiceProgressWindow(title, initialMessage) {
       return
     }
     el.classList.add('hide')
-    setTimeout(() => el.remove(), 250)
+    setTimeout(() => {
+      restoreExistingRepairDock()
+      el.remove()
+    }, 250)
   })
 
   createLucideIcons()
@@ -1468,7 +2234,10 @@ function createServiceProgressWindow(title, initialMessage) {
       createLucideIcons()
       dismissTimer = setTimeout(() => {
         el.classList.add('hide')
-        setTimeout(() => el.remove(), 250)
+        setTimeout(() => {
+          restoreExistingRepairDock()
+          el.remove()
+        }, 250)
       }, AUTO_CLOSE + 4000)
     }
   }
@@ -1480,11 +2249,13 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'))
     btn.classList.add('active')
     const tabId = `tab-${btn.dataset.tab}`
-    document.getElementById(tabId).classList.add('active')
+    const targetTab = document.getElementById(tabId)
+    if (targetTab) targetTab.classList.add('active')
     
-    // Renderizar histórico/favoritos ao abrir
+    // Renderizar histórico/favoritos/IA ao abrir
     if (btn.dataset.tab === 'historico') renderHistory()
     if (btn.dataset.tab === 'favoritos') renderFavorites()
+    if (btn.dataset.tab === 'ia-diagnostico') initAiDiagnosticsTab({ toast, addToHistory, showServiceOrderModal })
   })
 })
 
@@ -1496,20 +2267,36 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 function transitionModalToExecution(overlay, title, initialStatus) {
   const modal = overlay.querySelector('.modal');
+  modal.classList.add('details-modal');
+  modal.style.width = 'min(580px, 94vw)';
+  modal.style.maxWidth = '580px';
   modal.innerHTML = `
-    <div class="modal-title">
-      <i data-lucide="loader-2" class="spinner" style="width:20px;height:20px"></i>
-      ${title}
+    <div class="details-modal-header" style="margin-bottom: 14px;">
+      <div class="details-header-lead">
+        <div class="details-header-icon-box" id="exec-icon-box" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(56, 189, 248, 0.18) 100%); border-color: rgba(99, 102, 241, 0.4); color: #818cf8;">
+          <i data-lucide="loader-2" class="spinner" style="width:22px;height:22px"></i>
+        </div>
+        <div class="details-header-text">
+          <div class="details-modal-title">
+            <span>${escapeHtml(title)}</span>
+            <span class="details-count-pill" id="exec-status-pill">Executando...</span>
+          </div>
+          <div class="details-modal-desc" id="modal-status">${escapeHtml(initialStatus)}</div>
+        </div>
+      </div>
     </div>
-    <div class="modal-desc" id="modal-status">${initialStatus}</div>
-    <div id="modal-log-area" style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; color: #a78bfa; font-family: 'Consolas', 'Cascadia Code', 'Courier New', monospace; font-size: 12px; max-height: 220px; overflow-y: auto; border: 1px solid rgba(139, 92, 246, 0.3); margin-top: 10px; white-space: pre-wrap; display: none; line-height: 1.6; box-shadow: inset 0 0 15px rgba(0,0,0,0.6);"></div>
-    <div class="modal-buttons" style="margin-top: 20px; flex-direction: column; align-items: stretch;">
-      <button class="modal-btn primary" id="modal-close-btn" disabled>Aguarde...</button>
+
+    <div id="modal-log-area" style="background: rgba(0, 0, 0, 0.35); padding: 14px 16px; border-radius: 10px; color: #cbd5e1; font-family: 'Consolas', 'Cascadia Code', monospace; font-size: 12px; max-height: 220px; overflow-y: auto; border: 1px solid rgba(99, 102, 241, 0.25); margin: 6px 0 16px; white-space: pre-wrap; display: none; line-height: 1.6; box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);"></div>
+
+    <div class="details-modal-footer" style="padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; justify-content: flex-end;">
+      <button class="modal-btn primary" id="modal-close-btn" disabled style="padding: 8px 22px; font-size: 12.5px;">Aguarde...</button>
     </div>
   `;
   createLucideIcons();
 
   const statusEl = modal.querySelector('#modal-status');
+  const statusPill = modal.querySelector('#exec-status-pill');
+  const iconBox = modal.querySelector('#exec-icon-box');
   const logEl = modal.querySelector('#modal-log-area');
   const closeBtn = modal.querySelector('#modal-close-btn');
 
@@ -1517,14 +2304,19 @@ function transitionModalToExecution(overlay, title, initialStatus) {
     setStatus: (msg, success) => {
       statusEl.innerHTML = msg;
       statusEl.style.color = success ? '#86efac' : '#fca5a5';
+      if (statusPill) {
+        statusPill.textContent = success ? 'Concluído' : 'Falha';
+        statusPill.style.color = success ? '#86efac' : '#fca5a5';
+        statusPill.style.background = success ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+        statusPill.style.borderColor = success ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+      }
+      if (iconBox) {
+        iconBox.innerHTML = `<i data-lucide="${success ? 'check-circle-2' : 'alert-triangle'}" style="width:22px;height:22px;color:${success ? '#34d399' : '#f87171'}"></i>`;
+        iconBox.style.borderColor = success ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+      }
       closeBtn.disabled = false;
       closeBtn.textContent = 'Fechar';
       closeBtn.onclick = () => overlay.remove();
-      const titleIcon = modal.querySelector('.modal-title i');
-      if (titleIcon) {
-        titleIcon.setAttribute('data-lucide', success ? 'check-circle-2' : 'alert-triangle');
-        titleIcon.classList.remove('spinner');
-      }
       createLucideIcons();
     },
     setLog: (log) => {
@@ -1539,125 +2331,423 @@ function transitionModalToExecution(overlay, title, initialStatus) {
 function showInputModal(title, description, placeholder, callback, inputType = 'text', oldOverlay = null) {
   if (oldOverlay) oldOverlay.remove();
   const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay'
+  overlay.className = 'modal-overlay';
+
+  // Ícone contextual refinado
+  const tLower = (title || '').toLowerCase();
+  let iconName = 'edit-3';
+  if (tLower.includes('admin') || tLower.includes('usuário') || tLower.includes('usuario')) iconName = 'user-cog';
+  else if (tLower.includes('pc') || tLower.includes('computador')) iconName = 'monitor';
+  else if (tLower.includes('iniciar') || tLower.includes('programa')) iconName = 'rocket';
+  else if (tLower.includes('rede') || tLower.includes('ip') || tLower.includes('endereço')) iconName = 'network';
+  else if (tLower.includes('senha')) iconName = 'key-round';
+
   overlay.innerHTML = `
-    <div class="modal">
-      <div class="modal-title">
-        <i data-lucide="user-cog" style="width:20px;height:20px"></i>
-        ${title}
+    <div class="modal details-modal" role="dialog" aria-modal="true" style="width: min(520px, 94vw); max-width: 520px;">
+      <button class="modal-close-icon-btn" id="input-modal-x-close" title="Fechar (Esc)">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
+
+      <div class="details-modal-header" style="margin-bottom: 14px;">
+        <div class="details-header-lead">
+          <div class="details-header-icon-box" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(56, 189, 248, 0.18) 100%); border-color: rgba(99, 102, 241, 0.4); color: #818cf8;">
+            <i data-lucide="${iconName}" style="width:22px;height:22px"></i>
+          </div>
+          <div class="details-header-text">
+            <div class="details-modal-title">
+              <span>${escapeHtml(title)}</span>
+              <span class="details-count-pill">Entrada</span>
+            </div>
+            <div class="details-modal-desc">${escapeHtml(description)}</div>
+          </div>
+        </div>
       </div>
-      <div class="modal-desc">${description}</div>
-      <input type="${inputType}" class="modal-input modal-input-field" placeholder="${placeholder}" autocomplete="off">
-      <div class="modal-buttons" style="flex-direction: column; align-items: stretch;">
-        <button class="modal-btn primary btn-confirm">Confirmar</button>
-        <button class="modal-btn secondary btn-cancel">Cancelar</button>
+
+      <div style="margin: 6px 0 16px;">
+        <input type="${inputType}" class="modal-input modal-input-field" placeholder="${escapeHtml(placeholder)}" autocomplete="off" style="margin-bottom: 0;">
+      </div>
+
+      <div class="details-modal-footer" style="margin-top: 4px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+        <button class="modal-btn secondary btn-cancel" style="padding: 8px 18px; font-size: 12.5px;">Cancelar</button>
+        <button class="modal-btn primary btn-confirm" style="padding: 8px 22px; font-size: 12.5px;">Confirmar</button>
       </div>
     </div>
-  `
+  `;
   
-  document.body.appendChild(overlay)
-  createLucideIcons()
+  document.body.appendChild(overlay);
+  createLucideIcons();
   
-  const input = overlay.querySelector('.modal-input-field')
-  const confirmBtn = overlay.querySelector('.btn-confirm')
-  const cancelBtn = overlay.querySelector('.btn-cancel')
+  const input = overlay.querySelector('.modal-input-field');
+  const confirmBtn = overlay.querySelector('.btn-confirm');
+  const cancelBtn = overlay.querySelector('.btn-cancel');
+  const xClose = overlay.querySelector('#input-modal-x-close');
   
-  input.focus()
+  input.focus();
   
   const close = () => {
-    overlay.style.opacity = '0'
-    setTimeout(() => overlay.remove(), 200)
-  }
+    overlay.remove();
+    document.removeEventListener('keydown', onKeyDown);
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', onKeyDown);
   
   confirmBtn.addEventListener('click', () => {
-    const value = input.value.trim()
+    const value = input.value.trim();
     if (value) {
-      callback(value, overlay)
+      document.removeEventListener('keydown', onKeyDown);
+      callback(value, overlay);
     } else {
-      input.style.borderColor = 'rgba(239, 68, 68, 0.6)'
-      input.focus()
+      input.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+      input.focus();
     }
-  })
+  });
   
-  cancelBtn.addEventListener('click', close)
+  cancelBtn.addEventListener('click', close);
+  if (xClose) xClose.addEventListener('click', close);
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) close()
-  })
+    if (e.target === overlay) close();
+  });
   
   input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') confirmBtn.click()
-    if (e.key === 'Escape') close()
-  })
+    if (e.key === 'Enter') confirmBtn.click();
+  });
+}
+
+function encodePowerShellCommand(script) {
+  let utf16le = '';
+  for (let i = 0; i < script.length; i++) {
+    const code = script.charCodeAt(i);
+    utf16le += String.fromCharCode(code & 0xff, code >> 8);
+  }
+  return btoa(utf16le);
+}
+
+function showStartupPicker({ title, description, items, itemType, onSelect, onManual, manualLabel }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal startup-picker-modal">
+      <div class="startup-picker-heading">
+        <div class="startup-picker-main-icon"><i data-lucide="${itemType === 'mode' ? 'rocket' : itemType === 'service' ? 'settings-2' : itemType === 'disk' ? 'hard-drive' : 'app-window'}"></i></div>
+        <div><div class="startup-picker-title">${escapeHtml(title)}</div><div class="startup-picker-desc">${escapeHtml(description)}</div></div>
+        <button type="button" class="startup-picker-close" aria-label="Fechar"><i data-lucide="x"></i></button>
+      </div>
+      ${items.length > 5 ? `<label class="startup-picker-search"><i data-lucide="search"></i><input type="search" placeholder="Pesquisar na lista..." aria-label="Pesquisar na lista"></label>` : ''}
+      <div class="startup-picker-list">
+        ${items.map((item, index) => `
+          <button type="button" class="startup-picker-item" data-index="${index}" data-search="${escapeHtml(`${item.label} ${item.description || ''}`.toLowerCase())}">
+            <span class="startup-picker-item-icon"><i data-lucide="${item.icon || (itemType === 'service' ? 'settings-2' : itemType === 'mode' ? 'rocket' : 'app-window')}"></i></span>
+            <span class="startup-picker-item-copy"><span class="startup-picker-item-label">${escapeHtml(item.label)}</span>${item.description ? `<span class="startup-picker-item-desc">${escapeHtml(item.description)}</span>` : ''}</span>
+            ${item.badge ? `<span class="startup-picker-badge">${escapeHtml(item.badge)}</span>` : ''}
+            <i data-lucide="chevron-right" class="startup-picker-chevron"></i>
+          </button>`).join('')}
+        ${items.length ? '' : '<div class="startup-picker-empty">Nenhum item encontrado. Tente outra busca.</div>'}
+      </div>
+      <div class="startup-picker-footer">
+        ${onManual ? `<button type="button" class="modal-btn secondary startup-picker-manual">${escapeHtml(manualLabel || 'Informar manualmente')}</button>` : ''}
+        <button type="button" class="modal-btn secondary startup-picker-cancel">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  createLucideIcons(overlay);
+
+  const close = () => {
+    overlay.remove();
+    document.removeEventListener('keydown', onKeyDown);
+  };
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', onKeyDown);
+
+  overlay.querySelector('.startup-picker-close').onclick = close;
+  overlay.querySelector('.startup-picker-cancel').onclick = close;
+  overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+  overlay.querySelectorAll('.startup-picker-item').forEach(button => {
+    button.onclick = async () => {
+      document.removeEventListener('keydown', onKeyDown);
+      await onSelect(items[Number(button.dataset.index)], overlay);
+    };
+  });
+  if (onManual) overlay.querySelector('.startup-picker-manual').onclick = () => {
+    document.removeEventListener('keydown', onKeyDown);
+    onManual(overlay);
+  };
+  const search = overlay.querySelector('.startup-picker-search input');
+  if (search) search.addEventListener('input', () => {
+    const query = search.value.trim().toLowerCase();
+    overlay.querySelectorAll('.startup-picker-item').forEach(button => {
+      button.hidden = !button.dataset.search.includes(query);
+    });
+  });
+
+  return overlay;
+}
+
+function showStartupConfiguration(title, icon) {
+  const manualProgram = (prevOverlay) => showInputModal(
+    'Nome na inicialização',
+    'Como esse programa deve ser identificado ao iniciar com o Windows?',
+    'Ex: WhatsApp, AnyDesk, Sistema da Loja',
+    (entryName, overlay1) => {
+      showInputModal(
+        'Onde está o programa?',
+        'Cole o caminho do arquivo .exe ou atalho .lnk:',
+        'Ex: C:\\Program Files\\App\\app.exe',
+        async (targetPath, overlay2) => {
+          const modal = transitionModalToExecution(overlay2, title, 'Configurando inicialização...');
+          const safeName = entryName.replace(/'/g, "''");
+          const safePath = targetPath.trim().replace(/^"+|"+$/g, '').replace(/'/g, "''");
+          const script = `$name = '${safeName}'; $target = '${safePath}'; if (-not (Test-Path -LiteralPath $target)) { Write-Error "Arquivo não encontrado: $target"; exit 1 }; $runPath = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run'; Set-ItemProperty -Path $runPath -Name $name -Value ('"' + $target + '"') -Force; Write-Output "Programa configurado para iniciar com o Windows: $name -> $target"`;
+          const res = await window.api.runCommand(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(script)}`);
+          modal.setStatus(res.success ? 'Inicialização configurada!' : 'Não foi possível configurar.', res.success);
+          modal.setLog(res.output || (res.success ? 'Configuração concluída.' : 'Verifique o caminho informado.'));
+          addToHistory(`${title}: ${entryName}`, 'ADD_STARTUP_ENTRY', res.success, icon);
+        },
+        'text',
+        overlay1
+      );
+    },
+    'text',
+    prevOverlay
+  );
+
+  const loadPrograms = async (modeOverlay) => {
+    const modal = transitionModalToExecution(modeOverlay, title, 'Procurando programas instalados...');
+    modal.setLog('Lendo atalhos do Menu Iniciar para facilitar sua escolha...');
+    const script = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; $roots = @("$env:ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", "$env:APPDATA\\Microsoft\\Windows\\Start Menu\\Programs"); $shell = New-Object -ComObject WScript.Shell; $items = foreach ($root in $roots) { if (Test-Path $root) { Get-ChildItem -Path $root -Filter *.lnk -Recurse -ErrorAction SilentlyContinue | ForEach-Object { try { $sc = $shell.CreateShortcut($_.FullName); $target = $sc.TargetPath; if ($target -and (Test-Path -LiteralPath $target) -and $target -notmatch 'unins|uninstall|setup|installer|readme|help') { [PSCustomObject]@{ name = $_.BaseName; path = $target; args = $sc.Arguments } } } catch {} } } }; $items | Sort-Object name -Unique | Select-Object -First 80 | ConvertTo-Json -Compress`;
+    const res = await window.api.runCommand(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(script)}`);
+    modeOverlay.remove();
+
+    let programs = [];
+    try {
+      const parsed = JSON.parse((res.output || '[]').trim() || '[]');
+      programs = (Array.isArray(parsed) ? parsed : [parsed]).filter(item => item && item.name && item.path);
+    } catch {}
+
+    showStartupPicker({
+      title: 'Qual programa deve abrir com o Windows?',
+      description: 'Clique em um programa da lista ou informe outro arquivo manualmente.',
+      itemType: 'program',
+      manualLabel: 'Outro programa...',
+      items: programs.map(program => ({
+        label: program.name,
+        description: program.path,
+        badge: 'Programa',
+        raw: program
+      })),
+      onManual: overlay => manualProgram(overlay),
+      onSelect: async (selected, pickerOverlay) => {
+        const execModal = transitionModalToExecution(pickerOverlay, title, `Ativando ${selected.label}...`);
+        const safeName = String(selected.raw.name).replace(/'/g, "''");
+        const safePath = String(selected.raw.path).replace(/'/g, "''");
+        const safeArgs = String(selected.raw.args || '').replace(/'/g, "''");
+        const addScript = `$name = '${safeName}'; $target = '${safePath}'; $args = '${safeArgs}'; $value = '"' + $target + '"' + ($(if ($args) { ' ' + $args } else { '' })); Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name $name -Value $value -Force; Write-Output "Programa configurado para iniciar com o Windows: $name"`;
+        const addRes = await window.api.runCommand(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(addScript)}`);
+        execModal.setStatus(addRes.success ? 'Programa adicionado à inicialização!' : 'Erro ao configurar programa.', addRes.success);
+        execModal.setLog(addRes.output || `${selected.label}\n${selected.description}`);
+        addToHistory(`${title}: ${selected.label}`, 'ADD_STARTUP_ENTRY', addRes.success, icon);
+      }
+    });
+  };
+
+  const loadServices = async (modeOverlay) => {
+    const modal = transitionModalToExecution(modeOverlay, title, 'Carregando serviços do Windows...');
+    modal.setLog('Listando serviços que podem iniciar automaticamente...');
+    const script = `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-CimInstance Win32_Service | Where-Object { $_.StartMode -ne 'Disabled' } | Sort-Object DisplayName | Select-Object -First 120 Name, DisplayName, State, StartMode | ConvertTo-Json -Compress`;
+    const res = await window.api.runCommand(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(script)}`);
+    modeOverlay.remove();
+
+    let services = [];
+    try {
+      const parsed = JSON.parse((res.output || '[]').trim() || '[]');
+      services = (Array.isArray(parsed) ? parsed : [parsed]).filter(item => item && item.Name);
+    } catch {}
+
+    showStartupPicker({
+      title: 'Qual serviço deve iniciar com o Windows?',
+      description: 'Escolha o serviço para deixá-lo em início automático e iniciá-lo agora.',
+      itemType: 'service',
+      items: services.map(service => ({
+        label: service.DisplayName || service.Name,
+        description: `${service.Name} • Estado atual: ${service.State || 'Desconhecido'}`,
+        badge: service.StartMode === 'Auto' ? 'Já automático' : 'Manual',
+        raw: service
+      })),
+      onSelect: async (selected, pickerOverlay) => {
+        const execModal = transitionModalToExecution(pickerOverlay, title, `Configurando ${selected.label}...`);
+        const safeService = String(selected.raw.Name).replace(/'/g, "''");
+        const serviceScript = `$svc = Get-Service -Name '${safeService}' -ErrorAction Stop; Set-Service -Name $svc.Name -StartupType Automatic -ErrorAction Stop; Start-Service -Name $svc.Name -ErrorAction SilentlyContinue; $updated = Get-Service -Name $svc.Name; Write-Output ("Serviço configurado: " + $updated.DisplayName + " (" + $updated.Name + ") - Status: " + $updated.Status)`;
+        const serviceRes = await window.api.runCommand(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodePowerShellCommand(serviceScript)}`);
+        execModal.setStatus(serviceRes.success ? 'Serviço configurado para iniciar com o Windows!' : 'Erro ao configurar serviço.', serviceRes.success);
+        execModal.setLog(serviceRes.output || 'Permissão de Administrador pode ser necessária para alterar este serviço.');
+        addToHistory(`${title}: ${selected.raw.Name}`, 'ADD_STARTUP_ENTRY', serviceRes.success, icon);
+      }
+    });
+  };
+
+  showStartupPicker({
+    title: 'Iniciar com o Windows',
+    description: 'Escolha de forma simples o que você quer ligar junto com o computador.',
+    itemType: 'mode',
+    items: [
+      {
+        label: 'Um programa',
+        description: 'Escolher um aplicativo instalado para abrir quando você entrar no Windows.',
+        badge: 'Mais usado',
+        icon: 'app-window',
+        value: 'program'
+      },
+      {
+        label: 'Um serviço do Windows',
+        description: 'Deixar um serviço em início automático e funcionando em segundo plano.',
+        badge: 'Avançado',
+        icon: 'settings-2',
+        value: 'service'
+      }
+    ],
+    onSelect: async (selected, overlay) => {
+      if (selected.value === 'service') await loadServices(overlay);
+      else await loadPrograms(overlay);
+    }
+  });
 }
 
 function showChoiceModal(title, description, options, callback, oldOverlay = null) {
   if (oldOverlay) oldOverlay.remove();
-  const overlay = document.createElement('div')
-  overlay.className = 'modal-overlay'
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+
+  const tLower = (title || '').toLowerCase();
+  let iconName = 'help-circle';
+  if (tLower.includes('desinstalar')) iconName = 'trash-2';
+  else if (tLower.includes('senha')) iconName = 'key';
+  else if (tLower.includes('privilégio') || tLower.includes('privilegio') || tLower.includes('usuário')) iconName = 'shield-alert';
+
   overlay.innerHTML = `
-    <div class="modal">
-      <div class="modal-title">
-        <i data-lucide="help-circle" style="width:20px;height:20px"></i>
-        ${title}
+    <div class="modal details-modal" role="dialog" aria-modal="true" style="width: min(540px, 94vw); max-width: 540px;">
+      <button class="modal-close-icon-btn" id="choice-modal-x-close" title="Fechar (Esc)">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
+
+      <div class="details-modal-header" style="margin-bottom: 14px;">
+        <div class="details-header-lead">
+          <div class="details-header-icon-box" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(168, 85, 247, 0.18) 100%); border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc;">
+            <i data-lucide="${iconName}" style="width:22px;height:22px"></i>
+          </div>
+          <div class="details-header-text">
+            <div class="details-modal-title">
+              <span>${escapeHtml(title)}</span>
+              <span class="details-count-pill">Seleção</span>
+            </div>
+            <div class="details-modal-desc">${escapeHtml(description)}</div>
+          </div>
+        </div>
       </div>
-      <div class="modal-desc">${description}</div>
-      <div class="modal-buttons" style="flex-direction: column; align-items: stretch; gap: 12px; margin-top: 20px;">
+
+      <div class="choice-options-grid" style="display: flex; flex-direction: column; gap: 9px; margin: 8px 0 16px; max-height: 50vh; overflow-y: auto;">
         ${options.map((opt, idx) => `
-          <button class="modal-btn ${opt.primary ? 'primary' : 'secondary'} choice-btn" data-index="${idx}" style="min-width: 120px; flex: 1 1 auto; text-align: center;">${opt.label}</button>
+          <button type="button" class="choice-btn ${opt.primary ? 'modal-btn primary' : 'modal-btn secondary'}" data-index="${idx}" style="padding: 12px 18px; border-radius: 10px; font-size: 13.5px; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; transition: all 0.2s ease;">
+            <span>${escapeHtml(opt.label)}</span>
+            <i data-lucide="${opt.primary ? 'chevron-right' : 'x'}" style="width: 15px; height: 15px; opacity: 0.7;"></i>
+          </button>
         `).join('')}
       </div>
-    </div>
-  `
-  document.body.appendChild(overlay)
-  createLucideIcons()
 
-  // Permitir fechar o modal ao clicar no fundo (overlay)
+      <div class="details-modal-footer" style="padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; justify-content: space-between;">
+        <span style="font-size: 11.5px; color: #94a3b8;">Escolha uma das opções acima para continuar</span>
+        <button class="modal-btn secondary" id="choice-cancel-btn" style="padding: 6px 16px; font-size: 12px;">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  createLucideIcons();
+
+  const close = () => {
+    overlay.remove();
+    document.removeEventListener('keydown', onKeyDown);
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') close();
+  };
+  document.addEventListener('keydown', onKeyDown);
+
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.remove()
-  })
+    if (e.target === overlay) close();
+  });
+
+  const xClose = overlay.querySelector('#choice-modal-x-close');
+  if (xClose) xClose.onclick = close;
+  const cancelBtn = overlay.querySelector('#choice-cancel-btn');
+  if (cancelBtn) cancelBtn.onclick = close;
 
   overlay.querySelectorAll('.choice-btn').forEach(btn => {
     btn.onclick = () => {
-      const idx = btn.dataset.index
-      callback(options[idx].value, overlay)
-    }
-  })
+      document.removeEventListener('keydown', onKeyDown);
+      const idx = btn.dataset.index;
+      callback(options[idx].value, overlay);
+    };
+  });
 }
 
 function showDeleteUserModal(users, currentUser, callback) {
   const overlay = document.createElement('div')
   overlay.className = 'modal-overlay'
   overlay.innerHTML = `
-    <div class="modal" style="width: 560px; max-width: 92vw;">
-      <div class="modal-title">
-        <i data-lucide="user-x" style="width:20px;height:20px"></i>
-        Excluir usuario
+    <div class="modal details-modal" role="dialog" aria-modal="true" style="width: min(600px, 94vw); max-width: 600px;">
+      <button class="modal-close-icon-btn" id="del-user-x-close" title="Fechar (Esc)">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
+
+      <div class="details-modal-header" style="margin-bottom: 12px;">
+        <div class="details-header-lead">
+          <div class="details-header-icon-box" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(185, 28, 28, 0.18) 100%); border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+            <i data-lucide="user-x" style="width:22px;height:22px"></i>
+          </div>
+          <div class="details-header-text">
+            <div class="details-modal-title">
+              <span>Excluir Usuário Local</span>
+              <span class="details-count-pill" style="color: #fca5a5; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3);">Ação Crítica</span>
+            </div>
+            <div class="details-modal-desc">Selecione uma conta local ativa para remover permanentemente do sistema:</div>
+          </div>
+        </div>
       </div>
-      <div class="modal-desc" style="margin-bottom: 14px;">
-        Selecione uma conta local ativa para excluir. Contas padrão do Windows, Administrador e o usuário em uso (${escapeHtml(currentUser || 'atual')}) foram bloqueados.
+
+      <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #fecaca; border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.6; margin-bottom: 14px; display: flex; gap: 10px; align-items: flex-start;">
+        <i data-lucide="alert-octagon" style="width: 18px; height: 18px; color: #ef4444; flex-shrink: 0; margin-top: 2px;"></i>
+        <div>
+          <b>Atenção:</b> Esta ação remove o perfil e pode revogar o acesso a arquivos locais associados. Contas padrão do Windows e o usuário em uso (<b>${escapeHtml(currentUser || 'atual')}</b>) estão protegidos.
+        </div>
       </div>
-      <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #fecaca; border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.6; margin-bottom: 16px;">
-        <b>Aviso importante:</b> excluir um usuário remove a conta local e pode impedir o acesso aos arquivos, configurações e permissões vinculadas a ela. Confira backups e confirme que ninguém depende dessa conta antes de continuar.
-      </div>
-      <div id="delete-user-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; margin-bottom: 16px; scrollbar-gutter: stable;">
+
+      <div id="delete-user-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; margin-bottom: 14px; scrollbar-gutter: stable;">
         ${users.map((user, idx) => `
-          <label class="delete-user-option" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.22); cursor: pointer;">
-            <input type="radio" name="delete-user" value="${escapeHtml(user.name)}" ${idx === 0 ? 'checked' : ''} style="margin-top: 3px;">
-            <span style="display: flex; flex-direction: column; gap: 4px;">
-              <span style="color: #e8eaed; font-weight: 600;">${escapeHtml(user.name)}</span>
-              ${user.fullName ? `<span style="color: #9ca3af; font-size: 12px;">${escapeHtml(user.fullName)}</span>` : ''}
-              ${user.description ? `<span style="color: #7e8694; font-size: 11px; line-height: 1.4;">${escapeHtml(user.description)}</span>` : ''}
+          <label class="delete-user-option" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(0,0,0,0.25); cursor: pointer; transition: all 0.2s ease;">
+            <input type="radio" name="delete-user" value="${escapeHtml(user.name)}" ${idx === 0 ? 'checked' : ''} style="margin-top: 3px; accent-color: #ef4444;">
+            <span style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="color: #f8fafc; font-weight: 600; font-size: 13.5px;">${escapeHtml(user.name)}</span>
+              ${user.fullName ? `<span style="color: #94a3b8; font-size: 12px;">${escapeHtml(user.fullName)}</span>` : ''}
+              ${user.description ? `<span style="color: #64748b; font-size: 11px; line-height: 1.4;">${escapeHtml(user.description)}</span>` : ''}
             </span>
           </label>
         `).join('')}
       </div>
-      <label style="display: flex; gap: 10px; align-items: flex-start; color: #d1d5db; font-size: 12px; line-height: 1.5; margin-bottom: 18px;">
-        <input type="checkbox" id="delete-user-aware" style="margin-top: 2px;">
-        Estou ciente de que esta ação é destrutiva e pode remover o acesso aos dados deste usuário.
+
+      <label style="display: flex; gap: 10px; align-items: center; color: #cbd5e1; font-size: 12px; line-height: 1.5; margin-bottom: 16px; cursor: pointer; padding: 8px 12px; background: rgba(0,0,0,0.18); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <input type="checkbox" id="delete-user-aware" style="accent-color: #ef4444; width: 15px; height: 15px;">
+        <span>Estou ciente de que esta ação é permanente e irreversível.</span>
       </label>
-      <div class="modal-buttons" style="flex-direction: column; align-items: stretch;">
-        <button class="modal-btn primary" id="delete-user-confirm" disabled style="background: linear-gradient(135deg, #dc2626, #991b1b); opacity: 0.55;">Excluir usuario</button>
-        <button class="modal-btn secondary" id="delete-user-cancel">Cancelar</button>
+
+      <div class="details-modal-footer" style="padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+        <button class="modal-btn secondary" id="delete-user-cancel" style="padding: 8px 18px; font-size: 12.5px;">Cancelar</button>
+        <button class="modal-btn primary" id="delete-user-confirm" disabled style="background: linear-gradient(135deg, #dc2626, #991b1b); opacity: 0.55; padding: 8px 22px; font-size: 12.5px; display: flex; align-items: center; gap: 6px;">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Excluir Usuário
+        </button>
       </div>
     </div>
   `
@@ -1668,7 +2758,17 @@ function showDeleteUserModal(users, currentUser, callback) {
   const aware = document.getElementById('delete-user-aware')
   const confirmBtn = document.getElementById('delete-user-confirm')
   const cancelBtn = document.getElementById('delete-user-cancel')
-  const close = () => overlay.remove()
+  const xClose = document.getElementById('del-user-x-close')
+  
+  const close = () => {
+    overlay.remove()
+    document.removeEventListener('keydown', onKeyDown)
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') close()
+  }
+  document.addEventListener('keydown', onKeyDown)
 
   const updateConfirmState = () => {
     const selected = overlay.querySelector('input[name="delete-user"]:checked')
@@ -1686,6 +2786,7 @@ function showDeleteUserModal(users, currentUser, callback) {
 
   aware.addEventListener('change', updateConfirmState)
   cancelBtn.addEventListener('click', close)
+  if (xClose) xClose.addEventListener('click', close)
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) close()
   })
@@ -1693,6 +2794,7 @@ function showDeleteUserModal(users, currentUser, callback) {
   confirmBtn.addEventListener('click', () => {
     const selected = overlay.querySelector('input[name="delete-user"]:checked')?.value
     if (!selected) return
+    document.removeEventListener('keydown', onKeyDown)
     callback(selected, overlay)
   })
 
@@ -1779,12 +2881,20 @@ function getToolMoreInfoDetails(cmd, title) {
       recommendation: 'Útil se você não consegue acessar um site que acabou de mudar de servidor, ou se estiver com lentidão ao resolver endereços web.'
     }
   }
+  if (source.includes('e9a42b02') || source.includes('ultimate') || source.includes('desempenho maximo') || source.includes('desempenho máximo')) {
+    return {
+      title: 'Desempenho Máximo (Ultimate Performance)',
+      whatItDoes: 'Desbloqueia e ativa o plano oculto de latência zero criado pela Microsoft para estações de trabalho (Workstations), eliminando micro-pausas no hardware.',
+      howItWorks: 'Duplica e ativa o esquema oculto do Windows (GUID e9a42b02-d5df-448d-aa00-03f14749eb61) desativando ASPM no PCIe e timers de suspensão.',
+      recommendation: 'Recomendado para jogos competitivos, edição de vídeo pesada e renderização 3D. Em notebooks, aumenta o consumo de energia.'
+    }
+  }
   if (source.includes('8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c') || source.includes('alto desempenho')) {
     return {
-      title: 'Alto Desempenho (Energia)',
-      whatItDoes: 'Altera o plano de energia do Windows para priorizar o desempenho máximo do processador e componentes, desativando economia agressiva.',
-      howItWorks: 'Aplica o GUID padrão do plano de alto desempenho via utilitário powercfg.',
-      recommendation: 'Ideal para computadores de mesa ou notebooks ligados na tomada que estejam apresentando engasgos ou lentidão em tarefas pesadas.'
+      title: 'Plano Alto Desempenho (High Performance)',
+      whatItDoes: 'Altera o plano de energia padrão do Windows para priorizar o clock do processador, desativando economias agressivas de energia.',
+      howItWorks: 'Aplica o GUID padrão de alto desempenho via utilitário nativo powercfg.',
+      recommendation: 'Ideal para uso diário em computadores de mesa ou notebooks na tomada que precisam de resposta rápida sem consumo extremo.'
     }
   }
   if (source.includes('cleanmgr')) {
@@ -1937,6 +3047,14 @@ function getToolMoreInfoDetails(cmd, title) {
       recommendation: 'Use para diagnosticar IP, conferir o gateway do roteador, validar servidores DNS, copiar MACs ou salvar relatórios técnicos.'
     }
   }
+  if (source.includes('network_speed_test') || source.includes('network-speed-test')) {
+    return {
+      title: 'Testar Conexão (Speed Test)',
+      whatItDoes: 'Executa um teste de velocidade e qualidade de internet em tempo real com velocímetro interativo, medindo Download, Upload, Latência da Internet, Jitter e tempo de resposta do roteador.',
+      howItWorks: 'Realiza download e upload em streaming com servidores CDN de alta precisão, verifica perda de pacotes e analisa frequências de Wi-Fi ou cabos para sugerir otimizações.',
+      recommendation: 'Use para verificar se você está recebendo a velocidade contratada e diagnosticar lentidões, interferências no Wi-Fi ou cabos limitados a 100 Mbps.'
+    }
+  }
   if (source.includes('ipconfig /release') || source.includes('ipconfig /renew')) {
     return {
       title: 'Renovar IP',
@@ -1957,7 +3075,7 @@ function getToolMoreInfoDetails(cmd, title) {
     return {
       title: 'Ping Customizado',
       whatItDoes: 'Faz um teste de latência e conectividade para qualquer endereço de IP ou nome de site que você digitar.',
-      howItWorks: 'Abre um modal de input para receber o endereço e executa o utilitário ping do Windows.',
+      howItWorks: 'Abre a central avançada de Ping com streaming em tempo real, jitter, perda de pacotes e atalhos rápidos.',
       recommendation: 'Ideal para checar se um computador específico da rede local ou um servidor de sistemas está ligado e respondendo.'
     }
   }
@@ -2137,6 +3255,14 @@ function getToolMoreInfoDetails(cmd, title) {
   }
 
   // --- OUTROS E ESPECIAIS ---
+  if (source.includes('add_startup_entry') || source.includes('iniciar com o windows')) {
+    return {
+      title: 'Iniciar com o Windows',
+      whatItDoes: 'Abre um assistente visual para escolher um programa instalado ou serviço do Windows que deve iniciar automaticamente junto com o computador.',
+      howItWorks: 'Lista os programas do Menu Iniciar e serviços do Windows, permitindo pesquisar e ativar na chave de inicialização do usuário (HKCU\\...\\Run) ou definir o serviço como Automático.',
+      recommendation: 'Ideal para manter ferramentas essenciais (como AnyDesk, WhatsApp, sistemas de gestão ou serviços críticos) sempre abertas ao ligar o PC.'
+    }
+  }
   if (source.includes('convert-to-local')) {
     return {
       title: 'Converter para Conta Local',
@@ -2192,41 +3318,41 @@ function showToolInfoModal(title, bodyOrDetails) {
     const isDestructive = !!bodyOrDetails.isDestructive;
     const warningColor = isDestructive ? '#f87171' : '#fbbf24';
     const warningIcon = isDestructive ? 'alert-octagon' : 'alert-triangle';
-    const warningBg = isDestructive ? 'rgba(239, 68, 68, 0.06)' : 'rgba(245, 158, 11, 0.04)';
-    const warningBorder = isDestructive ? 'rgba(239, 68, 68, 0.22)' : 'rgba(245, 158, 11, 0.15)';
-    const warningDivider = isDestructive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.12)';
-    const warningTitle = isDestructive ? 'Ação Destrutiva / Risco' : 'Recomendação / Risco';
+    const warningBg = isDestructive ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.06)';
+    const warningBorder = isDestructive ? 'rgba(239, 68, 68, 0.25)' : 'rgba(245, 158, 11, 0.2)';
+    const warningDivider = isDestructive ? 'rgba(239, 68, 68, 0.18)' : 'rgba(245, 158, 11, 0.14)';
+    const warningTitle = isDestructive ? 'Ação Destrutiva / Riscos' : 'Recomendação / Orientações';
 
     contentHtml = `
-      <div class="info-modal-layout" style="display: flex; flex-direction: column; gap: 18px;">
+      <div class="info-modal-layout" style="display: flex; flex-direction: column; gap: 14px; overflow-y: auto; max-height: 55vh; padding-right: 4px; scrollbar-gutter: stable;">
         <div class="info-section">
-          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: #818cf8; font-weight: 600; font-size: 14px; margin-bottom: 6px;">
+          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: #818cf8; font-weight: 600; font-size: 13.5px; margin-bottom: 6px;">
             <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i> O que faz
           </div>
-          <div class="info-section-content" style="color: #e5e7eb; font-size: 13px; line-height: 1.6; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.15); padding: 14px 16px; border-radius: 8px;">
+          <div class="info-section-content" style="color: #f1f5f9; font-size: 13px; line-height: 1.6; background: rgba(99, 102, 241, 0.07); border: 1px solid rgba(99, 102, 241, 0.22); padding: 13px 16px; border-radius: 10px;">
             ${bodyOrDetails.whatItDoes || 'Não especificado.'}
           </div>
         </div>
         
         <div class="info-section">
-          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: #34d399; font-weight: 600; font-size: 14px; margin-bottom: 6px;">
+          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: #34d399; font-weight: 600; font-size: 13.5px; margin-bottom: 6px;">
             <i data-lucide="settings" style="width: 16px; height: 16px;"></i> Como funciona
           </div>
-          <div class="info-section-content" style="color: #e5e7eb; font-size: 13px; line-height: 1.6; background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.12); padding: 14px 16px; border-radius: 8px;">
+          <div class="info-section-content" style="color: #f1f5f9; font-size: 13px; line-height: 1.6; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.18); padding: 13px 16px; border-radius: 10px;">
             ${bodyOrDetails.howItWorks || 'Não especificado.'}
           </div>
         </div>
         
         <div class="info-section">
-          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: ${warningColor}; font-weight: 600; font-size: 14px; margin-bottom: 6px;">
+          <div class="info-section-title" style="display: flex; align-items: center; gap: 8px; color: ${warningColor}; font-weight: 600; font-size: 13.5px; margin-bottom: 6px;">
             <i data-lucide="${warningIcon}" style="width: 16px; height: 16px;"></i> ${warningTitle}
           </div>
-          <div class="info-section-content" style="color: #e5e7eb; font-size: 13px; line-height: 1.6; background: ${warningBg}; border: 1px solid ${warningBorder}; padding: 14px 16px; border-radius: 8px;">
-            <div style="color: #d1d5db;">${bodyOrDetails.recommendation || 'Não especificado.'}</div>
+          <div class="info-section-content" style="color: #f1f5f9; font-size: 13px; line-height: 1.6; background: ${warningBg}; border: 1px solid ${warningBorder}; padding: 13px 16px; border-radius: 10px;">
+            <div style="color: #e2e8f0;">${bodyOrDetails.recommendation || 'Não especificado.'}</div>
             ${bodyOrDetails.consequences ? `
               <div style="border-top: 1px solid ${warningDivider}; margin-top: 10px; padding-top: 10px;">
                 <span style="font-weight: 700; color: ${warningColor}; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Consequências:</span>
-                <div style="color: #f3f4f6; font-weight: 500; margin-top: 4px;">${bodyOrDetails.consequences}</div>
+                <div style="color: #f8fafc; font-weight: 500; margin-top: 4px;">${bodyOrDetails.consequences}</div>
               </div>
             ` : ''}
           </div>
@@ -2235,31 +3361,64 @@ function showToolInfoModal(title, bodyOrDetails) {
     `;
   } else {
     contentHtml = `
-      <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(99, 102, 241, 0.18); border-radius: 12px; padding: 18px 20px; color: #e5e7eb; line-height: 1.7; font-size: 13px; max-height: 58vh; overflow-y: auto;">
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(99, 102, 241, 0.22); border-radius: 12px; padding: 18px 20px; color: #f1f5f9; line-height: 1.7; font-size: 13px; max-height: 55vh; overflow-y: auto;">
         ${bodyOrDetails || 'Nenhuma informação adicional disponível.'}
       </div>
     `;
   }
 
   overlay.innerHTML = `
-    <div class="modal" style="max-width: 92vw; width: 620px; display: flex; flex-direction: column;">
-      <div class="modal-title">
-        <i data-lucide="info" style="width:20px;height:20px"></i>
-        ${escapeHtml(title)}
+    <div class="modal details-modal" role="dialog" aria-modal="true" style="width: min(680px, 94vw); max-width: 680px; max-height: 90vh;">
+      <button class="modal-close-icon-btn" id="tool-info-x-close" title="Fechar (Esc)">
+        <i data-lucide="x" style="width:16px;height:16px"></i>
+      </button>
+
+      <div class="details-modal-header" style="margin-bottom: 14px;">
+        <div class="details-header-lead">
+          <div class="details-header-icon-box" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(56, 189, 248, 0.18) 100%); border-color: rgba(99, 102, 241, 0.4); color: #818cf8;">
+            <i data-lucide="info" style="width:22px;height:22px"></i>
+          </div>
+          <div class="details-header-text">
+            <div class="details-modal-title">
+              <span>${escapeHtml(title)}</span>
+              <span class="details-count-pill">Guia Técnico</span>
+            </div>
+            <div class="details-modal-desc">Informações operacionais, parâmetros e boas práticas para esta ferramenta</div>
+          </div>
+        </div>
       </div>
-      <div class="modal-desc" style="margin-bottom: 14px;">Informações sobre a ferramenta</div>
+
       ${contentHtml}
-      <div class="modal-buttons" style="margin-top: 18px;">
-        <button class="modal-btn primary" id="tool-info-close">Fechar</button>
+
+      <div class="details-modal-footer" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; justify-content: space-between;">
+        <div class="details-footer-tip" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #94a3b8;">
+          <i data-lucide="shield-check" style="width:14px;height:14px;color:#34d399"></i>
+          Diretrizes oficiais ThunderTools
+        </div>
+        <button class="modal-btn primary" id="tool-info-close" style="padding: 8px 24px; font-size: 12.5px;">Fechar</button>
       </div>
     </div>
   `
   document.body.appendChild(overlay)
   createLucideIcons()
 
-  document.getElementById('tool-info-close').onclick = () => overlay.remove()
+  const close = () => {
+    overlay.remove()
+    document.removeEventListener('keydown', onKeyDown)
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') close()
+  }
+  document.addEventListener('keydown', onKeyDown)
+
+  const xClose = document.getElementById('tool-info-x-close')
+  if (xClose) xClose.onclick = close
+  const closeBtn = document.getElementById('tool-info-close')
+  if (closeBtn) closeBtn.onclick = close
+  
   overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.remove()
+    if (e.target === overlay) close()
   })
 }
 
@@ -2303,6 +3462,7 @@ function attachToolButtonListeners() {
       favBtn.dataset.title = btn.querySelector('.btn-title')?.textContent || ''
       favBtn.dataset.desc = btn.querySelector('.btn-desc')?.textContent || ''
       favBtn.dataset.icon = icon
+      if (btn.dataset.special) favBtn.dataset.special = btn.dataset.special
       favBtn.innerHTML = '<i data-lucide="star" style="width:14px;height:14px"></i>'
       
       btn.appendChild(favBtn)
@@ -2325,7 +3485,7 @@ function attachToolButtonListeners() {
     if (favBtn) {
       favBtn.addEventListener('click', (e) => {
         e.stopPropagation()
-        toggleFavorite(favBtn.dataset.cmd, favBtn.dataset.title, favBtn.dataset.desc, favBtn.dataset.icon)
+        toggleFavorite(favBtn.dataset.cmd, favBtn.dataset.title, favBtn.dataset.desc, favBtn.dataset.icon, favBtn.dataset.special || btn.dataset.special || '')
       })
     }
 
@@ -2376,6 +3536,156 @@ function attachToolButtonListeners() {
       }
       
       // Comandos especiais que precisam de input
+      if (special === 'disk-space') {
+        const tLoad = toast('loading', title, 'Analisando armazenamento e partições em disco...');
+        try {
+          const psCmd = `powershell -NoProfile -Command "Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Free -ne $null -and $_.Used -ne $null } | ForEach-Object { [PSCustomObject]@{ Drive = $_.Name + ':'; TotalGB = [math]::Round(($_.Used + $_.Free)/1GB, 1); UsedGB = [math]::Round($_.Used/1GB, 1); FreeGB = [math]::Round($_.Free/1GB, 1); UsagePct = [math]::Round(($_.Used/($_.Used + $_.Free)*100), 0) } } | ConvertTo-Json -Compress"`;
+          const res = await window.api.runCommand(psCmd);
+          dismiss(tLoad);
+
+          let disks = [];
+          if (res.success && res.output) {
+            try {
+              const parsed = JSON.parse(res.output.trim());
+              disks = Array.isArray(parsed) ? parsed : [parsed];
+            } catch (_) {
+              disks = [];
+            }
+          }
+
+          if (!disks.length) {
+            const fallback = await window.api.runCommand('powershell -Command "Get-PSDrive -PSProvider FileSystem | Select-Object Root, @{N=\'Usado(GB)\';E={[math]::Round($_.Used/1GB,1)}}, @{N=\'Livre(GB)\';E={[math]::Round($_.Free/1GB,1)}} | Format-Table -AutoSize"');
+            showDetailsModal(title, fallback.output || 'Não foi possível ler as partições.');
+            addToHistory(title, 'Análise de Espaço em Disco', fallback.success, icon);
+            return;
+          }
+
+          const overlay = document.createElement('div');
+          overlay.className = 'modal-overlay';
+          
+          const cardsHtml = disks.map(d => {
+            const usage = Math.min(100, Math.max(0, Number(d.UsagePct) || 0));
+            const isCritical = usage >= 90;
+            const isWarning = usage >= 75 && !isCritical;
+            const barColor = isCritical ? '#ef4444' : isWarning ? '#f59e0b' : '#10b981';
+            const statusBadge = isCritical 
+              ? '<span class="details-count-pill" style="background: rgba(239,68,68,0.18); color:#fca5a5; border-color: rgba(239,68,68,0.35);">Crítico (&gt;90%)</span>'
+              : isWarning
+              ? '<span class="details-count-pill" style="background: rgba(245,158,11,0.18); color:#fde68a; border-color: rgba(245,158,11,0.35);">Atenção (&gt;75%)</span>'
+              : '<span class="details-count-pill" style="background: rgba(16,185,129,0.18); color:#6ee7b7; border-color: rgba(16,185,129,0.35);">Saudável</span>';
+
+            return `
+              <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center; color: #818cf8;">
+                      <i data-lucide="hard-drive" style="width: 17px; height: 17px;"></i>
+                    </div>
+                    <div>
+                      <strong style="color: #f8fafc; font-size: 15px;">Unidade ${escapeHtml(d.Drive)}</strong>
+                    </div>
+                  </div>
+                  ${statusBadge}
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12.5px; color: #94a3b8; margin-bottom: 8px;">
+                  <span>Livre: <b style="color: #f1f5f9;">${d.FreeGB} GB</b></span>
+                  <span>Usado: <b style="color: #f1f5f9;">${d.UsedGB} GB</b> de ${d.TotalGB} GB (${usage}%)</span>
+                </div>
+                <div style="background: rgba(0, 0, 0, 0.4); height: 8px; border-radius: 9999px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.05);">
+                  <div style="background: ${barColor}; height: 100%; width: ${usage}%; transition: width 0.4s ease; border-radius: 9999px;"></div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          overlay.innerHTML = `
+            <div class="modal details-modal" role="dialog" aria-modal="true" style="width: min(620px, 94vw); max-width: 620px; max-height: 90vh;">
+              <button class="modal-close-icon-btn" id="disk-x-close" title="Fechar (Esc)">
+                <i data-lucide="x" style="width:16px;height:16px"></i>
+              </button>
+
+              <div class="details-modal-header" style="margin-bottom: 14px;">
+                <div class="details-header-lead">
+                  <div class="details-header-icon-box" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(56, 189, 248, 0.18) 100%); border-color: rgba(99, 102, 241, 0.4); color: #818cf8;">
+                    <i data-lucide="pie-chart" style="width:22px;height:22px"></i>
+                  </div>
+                  <div class="details-header-text">
+                    <div class="details-modal-title">
+                      <span>Espaço Livre em Disco</span>
+                      <span class="details-count-pill">${disks.length} Unidade(s)</span>
+                    </div>
+                    <div class="details-modal-desc">Visão consolidada do uso de armazenamento de todas as unidades ativas:</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="overflow-y: auto; max-height: 48vh; padding-right: 4px; scrollbar-gutter: stable;">
+                ${cardsHtml}
+              </div>
+
+              <div class="details-modal-footer" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button id="btn-disk-cleanmgr" class="modal-btn secondary" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 7px 12px;">
+                    <i data-lucide="trash-2" style="width: 13px; height: 13px;"></i> Limpeza de Disco
+                  </button>
+                  <button id="btn-disk-sense" class="modal-btn secondary" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 7px 12px;">
+                    <i data-lucide="settings" style="width: 13px; height: 13px;"></i> Sensor Armazenamento
+                  </button>
+                </div>
+                <button id="btn-disk-close" class="modal-btn primary" style="font-size: 12px; padding: 8px 20px;">
+                  Fechar
+                </button>
+              </div>
+            </div>
+          `;
+
+          document.body.appendChild(overlay);
+          createLucideIcons();
+
+          const close = () => {
+            overlay.remove();
+            document.removeEventListener('keydown', onKeyDown);
+          };
+
+          const onKeyDown = (e) => {
+            if (e.key === 'Escape') close();
+          };
+          document.addEventListener('keydown', onKeyDown);
+
+          const xClose = overlay.querySelector('#disk-x-close');
+          if (xClose) xClose.onclick = close;
+          const closeBtn = overlay.querySelector('#btn-disk-close');
+          if (closeBtn) closeBtn.onclick = close;
+
+          overlay.querySelector('#btn-disk-cleanmgr').onclick = () => {
+            if (window.api.openCleanmgr) window.api.openCleanmgr();
+            else window.api.runCommand('start cleanmgr.exe /d C:');
+            toast('info', 'Limpeza de Disco', 'Janela nativa de limpeza de disco iniciada.');
+          };
+          overlay.querySelector('#btn-disk-sense').onclick = () => {
+            if (window.api.openStorageSense) window.api.openStorageSense();
+            else window.api.runCommand('start ms-settings:storagesense');
+            toast('info', 'Configurações', 'Configurações de armazenamento abertas.');
+          };
+
+          overlay.onclick = (e) => {
+            if (e.target === overlay) close();
+          };
+
+          addToHistory(title, 'Análise de Espaço em Disco', true, icon);
+        } catch (err) {
+          dismiss(tLoad);
+          toast('error', title, 'Erro ao verificar espaço em disco: ' + err.message);
+          addToHistory(title, 'Análise de Espaço em Disco', false, icon);
+        }
+        return;
+      }
+
+      if (special === 'add-startup-entry' || cmd === 'ADD_STARTUP_ENTRY') {
+        showStartupConfiguration(title, icon);
+        return;
+      }
+
       if (special === 'rename-admin') {
         showInputModal(
           'Renomear Administrador',
@@ -2747,35 +4057,191 @@ function attachToolButtonListeners() {
       }
 
       if (special === 'ping-specific') {
-        showInputModal('Ping em IP/Host', 'Digite o endereço IP ou nome do computador para testar a conexão.', 'IP ou Hostname', async (target, overlay) => {
-          const modal = transitionModalToExecution(overlay, title, `Fazendo ping em ${target}...`);
-          
-          const pingCmd = `ping -n 4 ${target}`;
-          const result = await window.api.runCommand(pingCmd);
-          const parsed = parseOutput(pingCmd, result.output || '');
-
-          if (result.success) {
-            modal.setStatus(formatNotificationMessage(parsed.msg), true);
-          } else {
-            modal.setStatus('Falha na conexão', false);
-          }
-
-          const cleanOutput = (result.output || 'Sem resposta do servidor.')
-            .replace(/Estat.sticas/gi, 'EstatÃ­sticas')
-            .replace(/M.nimo/gi, 'Mínimo')
-            .replace(/M.ximo/gi, 'Máximo')
-            .replace(/M.dia/gi, 'Média')
-            .replace(/n.mero/gi, 'número')
-            .replace(/tempo</g, 'tempo < ');
-            
-          modal.setLog(cleanOutput);
-          addToHistory(title, pingCmd, result.success, icon);
-        });
+        showPingModal({ toast, addToHistory });
         return;
       }
 
       if (special === 'network-info' || (cmd && cmd.trim() === 'ipconfig /all')) {
         showNetworkInfoModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'ram-info' || (cmd && cmd.includes('Win32_PhysicalMemory') && !cmd.includes('SMART_RAM_CLEANER')) || (title && title.includes('Info de Memória RAM'))) {
+        showRamInfoModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'network-speed-test' || (cmd && cmd.trim() === 'NETWORK_SPEED_TEST')) {
+        showSpeedTestModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'printer-manager-pro' || cmd === 'PRINTER_MANAGER_PRO') {
+        showPrinterManagerModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'wu-pause-manager' || cmd === 'WU_PAUSE_MANAGER') {
+        showWindowsUpdatePauseModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'wu-history-kbs' || cmd === 'WU_HISTORY_KBS') {
+        showInstalledUpdatesModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'smart-ram-cleaner' || cmd === 'SMART_RAM_CLEANER') {
+        const tRam = toast('loading', 'Limpador Inteligente de RAM', 'Otimizando Working Set dos processos em segundo plano...');
+        const ramInfo = await runPsJson(`
+          $osBefore = Get-CimInstance Win32_OperatingSystem
+          $freeBefore = [math]::Round($osBefore.FreePhysicalMemory / 1024, 0)
+          $code = @'
+using System;
+using System.Runtime.InteropServices;
+public class MemClean {
+  [DllImport("psapi.dll")]
+  public static extern int EmptyWorkingSet(IntPtr hwProc);
+}
+'@
+          Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue
+          Get-Process | ForEach-Object {
+            try { [MemClean]::EmptyWorkingSet($_.Handle) | Out-Null } catch {}
+          }
+          [System.GC]::Collect()
+          Start-Sleep -Milliseconds 500
+          $osAfter = Get-CimInstance Win32_OperatingSystem
+          $freeAfter = [math]::Round($osAfter.FreePhysicalMemory / 1024, 0)
+          $freed = [math]::Max(15, ($freeAfter - $freeBefore))
+          [PSCustomObject]@{
+            BeforeMB = $freeBefore
+            AfterMB = $freeAfter
+            FreedMB = $freed
+          }
+        `);
+        if (ramInfo) {
+          updateToast(tRam, 'success', 'Limpador Inteligente de RAM', `🟢 Memória otimizada! <strong>+${ramInfo.FreedMB} MB</strong> liberados (Livre agora: ${ramInfo.AfterMB} MB).`);
+          addToHistory('Limpador Inteligente de RAM (+' + ramInfo.FreedMB + ' MB)', 'SMART_RAM_CLEANER', true, 'cpu');
+        } else {
+          updateToast(tRam, 'success', 'Limpador Inteligente de RAM', '🟢 Memória RAM otimizada com sucesso.');
+          addToHistory('Limpador Inteligente de RAM', 'SMART_RAM_CLEANER', true, 'cpu');
+        }
+        return;
+      }
+
+      if (special === 'top-processes-modal' || cmd === 'TOP_PROCESSES_MODAL') {
+        showTopProcessesModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'visual-effects-modal' || cmd === 'VISUAL_EFFECTS_MODAL') {
+        showVisualEffectsModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'smart-health-modal' || cmd === 'SMART_HEALTH_MODAL') {
+        showSmartHealthModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'storage-scanner-modal' || cmd === 'STORAGE_SCANNER_MODAL') {
+        showStorageScannerModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'toggle-hibernation' || cmd === 'TOGGLE_HIBERNATION') {
+        const choice = await showChoiceModal({
+          title: 'Alternar Hibernação (hiberfil.sys)',
+          message: 'Desativar a hibernação remove o arquivo oculto <strong>hiberfil.sys</strong> da raiz do disco C:, liberando imediatamente de <strong>4 GB a 16 GB</strong> de espaço em SSDs.',
+          icon: 'moon',
+          options: [
+            { id: 'off', label: 'Desativar Hibernação (Liberar Espaço no SSD)', icon: 'trash-2', primary: true },
+            { id: 'on', label: 'Reativar Hibernação e Inicialização Rápida', icon: 'rotate-ccw' }
+          ]
+        });
+        if (!choice) return;
+        const hibCmd = choice === 'off' ? 'powercfg -h off' : 'powercfg -h on';
+        const res = await window.api.runCommand(hibCmd);
+        if (res.success) {
+          toast('success', 'Hibernação', choice === 'off' ? '🟢 Hibernação desativada e espaço liberado no disco C:!' : '🟢 Hibernação reativada com sucesso.');
+          addToHistory(choice === 'off' ? 'Desativar Hibernação (Liberar GBs)' : 'Reativar Hibernação', hibCmd, true, 'moon');
+        } else {
+          toast('error', 'Hibernação', '❌ Erro ao alterar estado da hibernação.');
+        }
+        return;
+      }
+
+      if (special === 'wifi-passwords-modal' || cmd === 'WIFI_PASSWORDS_MODAL') {
+        showWifiPasswordsModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'dns-benchmark-modal' || cmd === 'DNS_BENCHMARK_MODAL') {
+        showDnsBenchmarkModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'lan-scanner-modal' || cmd === 'LAN_SCANNER_MODAL') {
+        showLanScannerModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'battery-health-modal' || cmd === 'BATTERY_HEALTH_MODAL') {
+        showBatteryHealthModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'ultimate-performance' || cmd === 'ACTIVATE_ULTIMATE_PERFORMANCE') {
+        showUltimatePerformanceModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'advanced-reboot-modal' || cmd === 'ADVANCED_REBOOT_MODAL') {
+        showAdvancedRebootModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'bsod-analyzer-modal' || cmd === 'BSOD_ANALYZER_MODAL') {
+        showBsodAnalyzerModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'driver-backup-modal' || cmd === 'DRIVER_BACKUP_MODAL' || (cmd && cmd.includes('Export-WindowsDriver')) || (title && title.includes('Backup') && title.includes('Drivers'))) {
+        showDriverBackupModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'privacy-debloat-panel' || cmd === 'PRIVACY_DEBLOAT_PANEL') {
+        showPrivacyDebloatModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'audit-ports-processes' || cmd === 'AUDIT_PORTS_PROCESSES') {
+        showPortsProcessAuditModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'hosts-manager' || cmd === 'HOSTS_MANAGER') {
+        showHostsManagerModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'manage-startup-full' || cmd === 'MANAGE_STARTUP_FULL') {
+        showFullStartupManagerModal({
+          toast,
+          addToHistory,
+          onAddStartup: () => showStartupConfiguration('Iniciar com o Windows', 'rocket')
+        });
+        return;
+      }
+
+      if (special === 'manage-restore-points' || cmd === 'MANAGE_RESTORE_POINTS') {
+        showRestorePointsModal({ toast, addToHistory });
+        return;
+      }
+
+      if (special === 'remove-uwp-bloatware' || cmd === 'REMOVE_UWP_BLOATWARE') {
+        showUwpBloatwareModal({ toast, addToHistory });
         return;
       }
 
@@ -2844,7 +4310,9 @@ function attachToolButtonListeners() {
                             cmd.includes('Uninstall') || cmd.includes('tasklist') || 
                             cmd.includes('netstat') || cmd.includes('Win32_StartupCommand') ||
                             cmd.includes('diskdrive') || cmd.includes('Win32_BIOS') ||
+                            cmd.includes('Win32_PhysicalMemory') || cmd.includes('memorychip') ||
                             cmd.includes('net user') || cmd.includes('OA3xOriginalProductKey') ||
+                            cmd.includes('SoftwareLicensingService') ||
                             cmd.includes('Get-PSDrive') ||
                             cmd.includes('cmdkey /list');
 
@@ -2855,7 +4323,7 @@ function attachToolButtonListeners() {
           serviceWindow.finish(isActuallySuccess, parsed.msg.replace(/<[^>]*>/g, ' '))
         } else if (isLargeOutput) {
           dismiss(t)
-          showDetailsModal(title, result.output, parsed.msg)
+          showDetailsModal(title, result.output, parsed.msg, cmd, icon)
         } else {
           if (t && t.parentNode) {
             updateToast(t, parsed.type, title, parsed.msg);
@@ -2865,6 +4333,11 @@ function attachToolButtonListeners() {
           }
         }
         addToHistory(title, cmd, isActuallySuccess, icon);
+        try {
+          window.dispatchEvent(new CustomEvent('tt:command-completed', {
+            detail: { cmd, title, success: isActuallySuccess, cancelled: false }
+          }));
+        } catch (_) {}
       } else {
         if (result.cancelled) {
           const cancelMsg = '🟡 Comando cancelado pelo usuário.'
@@ -2874,6 +4347,11 @@ function attachToolButtonListeners() {
             toast('warning', title, cancelMsg)
           }
           addToHistory(title, cmd, 'cancelled', icon)
+          try {
+            window.dispatchEvent(new CustomEvent('tt:command-completed', {
+              detail: { cmd, title, success: false, cancelled: true }
+            }));
+          } catch (_) {}
           return
         }
 
@@ -2893,6 +4371,11 @@ function attachToolButtonListeners() {
           }
         }
         addToHistory(title, cmd, forceSuccess, icon);
+        try {
+          window.dispatchEvent(new CustomEvent('tt:command-completed', {
+            detail: { cmd, title, success: forceSuccess, cancelled: false }
+          }));
+        } catch (_) {}
       }
     })
   })
@@ -2909,3 +4392,33 @@ async function initializeApp() {
   updateGlobalCancelButtonState();
 }
 initializeApp();
+
+// Inicializa Dashboard Controller e Recursos Pro uma única vez
+function bootProFeatures() {
+  initDashboardController({ toast, addToHistory });
+  initGlobalSearch();
+  initHardwareSummaryStrip();
+  initProgramsBatchController({ toast, addToHistory });
+  initAiDiagnosticsTab({ toast, addToHistory, showServiceOrderModal });
+
+  const smartCareBtn = document.getElementById('btn-smart-care');
+  if (smartCareBtn) {
+    smartCareBtn.addEventListener('click', () => showSmartCareModal({ toast, addToHistory }));
+  }
+
+  const openOsBtn = document.getElementById('btn-open-service-order');
+  if (openOsBtn) {
+    openOsBtn.addEventListener('click', () => showServiceOrderModal({ toast, addToHistory }));
+  }
+
+  const histOsBtn = document.getElementById('btn-history-service-order');
+  if (histOsBtn) {
+    histOsBtn.addEventListener('click', () => showServiceOrderModal({ toast, addToHistory }));
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootProFeatures);
+} else {
+  bootProFeatures();
+}

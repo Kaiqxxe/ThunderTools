@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="src/components/dashboard/dashboard.css">
   <style>
     :root {
       color-scheme: dark;
@@ -1438,7 +1439,12 @@
       <h1><i data-lucide="zap" style="width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:6px"></i>ThunderTools</h1>
       <span class="header-subtitle">Ferramentas de Manutenção Windows</span>
     </div>
-    <div class="header-right">
+    <div class="header-right" style="-webkit-app-region: no-drag;">
+      <button type="button" id="global-search-trigger" class="tt-global-search-btn" title="Busca Global de Ferramentas (Ctrl + K)">
+        <i data-lucide="search" style="width:14px;height:14px;color:#818cf8;"></i>
+        <span>Buscar ferramenta...</span>
+        <kbd>Ctrl+K</kbd>
+      </button>
       <div class="system-stats">
         <div class="stat-item">
           <i data-lucide="cpu" style="width:14px;height:14px"></i>
@@ -1466,7 +1472,12 @@
   </header>
   <div class="container">
     <nav class="sidebar">
-      <button class="tab-btn active" data-tab="impressao"><i data-lucide="printer" style="width:15px;height:15px"></i> Impressão</button>
+      <button class="tab-btn active" data-tab="inicio"><i data-lucide="home" style="width:15px;height:15px"></i> Início</button>
+      <button class="tab-btn" data-tab="ia-diagnostico" id="nav-btn-ia">
+        <i data-lucide="sparkles" style="width:15px;height:15px;color:#c084fc;"></i> Thunder IA
+        <span class="ai-badge-sidebar">IA</span>
+      </button>
+      <button class="tab-btn" data-tab="impressao"><i data-lucide="printer" style="width:15px;height:15px"></i> Impressão</button>
       <button class="tab-btn" data-tab="atualizacao"><i data-lucide="refresh-cw" style="width:15px;height:15px"></i> Windows Update</button>
       <button class="tab-btn" data-tab="desempenho"><i data-lucide="zap" style="width:15px;height:15px"></i> Desempenho</button>
       <button class="tab-btn" data-tab="disco"><i data-lucide="hard-drive" style="width:15px;height:15px"></i> Disco</button>
@@ -1482,81 +1493,627 @@
     </nav>
     <div class="main">
 
+      <!-- INÍCIO / DASHBOARDS EM TEMPO REAL -->
+      <div class="tab-content active" id="tab-inicio">
+        <!-- Seção Superior: Banner de Diagnóstico -->
+        <section class="tt-diagnostic-banner" id="system-diagnostic-banner">
+          <!-- Linha Principal Superior: Status, Métricas e Botões de Ação -->
+          <div class="tt-diag-main-row">
+            <div class="tt-diag-left-group">
+              <div class="tt-diag-icon-wrapper" id="diag-status-icon">
+                <i data-lucide="check-circle-2" style="width:26px;height:26px"></i>
+              </div>
+              <div class="tt-diag-info-group">
+                <div class="tt-diag-header-line">
+                  <span class="tt-diag-category-label">Diagnóstico do Sistema</span>
+                  <button type="button" class="tt-card-info-btn" data-info="diagnostico" title="Informações sobre o Diagnóstico do Sistema">
+                    <i data-lucide="info" style="width:13px;height:13px"></i>
+                  </button>
+                  <div class="tt-diag-badges-container" id="diag-badges-container">
+                    <span class="tt-diag-pill score" id="diag-score-pill" style="display:none;">
+                      <i data-lucide="activity" style="width:11px;height:11px"></i>
+                      <span id="diag-score-text">Saúde: 100/100</span>
+                    </span>
+                    <span class="tt-diag-pill storage" id="diag-storage-pill" style="display:none;">
+                      <i data-lucide="hard-drive" style="width:11px;height:11px"></i>
+                      <span id="diag-storage-text">Disco C: 10 GB Livres</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="tt-diag-headline" id="diag-headline">Sistema Operando Normalmente</div>
+                <div class="tt-diag-subtext" id="diag-subtext">Nenhuma lentidão detectada em segundo plano. Métricas do Windows estão dentro dos padrões ideais.</div>
+              </div>
+            </div>
+
+            <div class="tt-diag-actions">
+              <button type="button" class="tt-smart-care-btn" id="btn-smart-care" title="Executar Manutenção Guiada 1-Clique">
+                <i data-lucide="sparkles" style="width:14px;height:14px"></i>
+                <span>Manutenção 1-Clique</span>
+              </button>
+              <button type="button" class="tt-fix-btn" id="btn-fix-issues" style="display:none;">
+                <i data-lucide="wrench" style="width:14px;height:14px"></i>
+                <span>Corrigir Agora</span>
+              </button>
+              <button type="button" class="tt-refresh-diag-btn" id="btn-refresh-diag" title="Executar nova auditoria do sistema em tempo real">
+                <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
+                <span>Verificar Novamente</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Linha Inferior Unificada: Metadados, Auditoria e Ciclo de Verificação -->
+          <div class="tt-diag-footer-bar">
+            <div class="tt-diag-footer-meta">
+              <span class="tt-diag-meta-item">
+                <i data-lucide="clock" style="width:12px;height:12px"></i>
+                <span>Última verificação: <strong id="diag-last-check" style="font-weight:600;color:#cbd5e1;">Agora mesmo</strong></span>
+              </span>
+              <span class="tt-diag-footer-divider">•</span>
+              <span class="tt-diag-meta-item tt-diag-next-schedule">
+                <i data-lucide="calendar-check" style="width:12px;height:12px"></i>
+                <span>Próxima auditoria: <strong id="diag-next-check" style="font-weight:600;">Definindo...</strong></span>
+              </span>
+              <span class="tt-diag-footer-divider">•</span>
+              <span class="tt-diag-meta-item tt-diag-audit-tag">
+                <i data-lucide="shield-check" style="width:12px;height:12px;color:#10b981;"></i>
+                <span>6 subsistemas monitorados</span>
+              </span>
+            </div>
+
+            <div class="tt-diag-schedule-selector-wrap" title="Defina o intervalo periódico entre verificações automáticas de integridade">
+              <i data-lucide="timer" style="width:13px;height:13px;color:#818cf8;"></i>
+              <label for="diag-schedule-select" style="font-size:11px;cursor:pointer;">Ciclo de Auditoria:</label>
+              <select id="diag-schedule-select" class="tt-diag-schedule-select">
+                <option value="4">A cada 4 Horas</option>
+                <option value="12">A cada 12 Horas</option>
+                <option value="24" selected>A cada 24 Horas (Diário)</option>
+                <option value="48">A cada 48 Horas (2 dias)</option>
+                <option value="168">Semanalmente (7 dias)</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Faixa de Resumo de Hardware em Tempo Real -->
+        <div class="tt-hw-summary-bar" id="tt-hw-summary-bar">
+          <i data-lucide="cpu" style="width:15px;height:15px;color:#818cf8;flex-shrink:0;"></i>
+          <span id="tt-hw-summary-text">Identificando especificações de CPU, Placa-Mãe, GPU, RAM e Tempo de Atividade (Uptime)...</span>
+        </div>
+
+        <!-- Dashboards em Tempo Real Grid -->
+        <section style="width:100%;">
+          <div class="tt-section-header">
+            <h3 class="tt-section-title">Dashboards em Tempo Real</h3>
+          </div>
+          <div class="tt-metrics-grid" style="margin-top:14px;">
+            <!-- CPU Card -->
+            <div class="tt-metric-card">
+              <div class="tt-card-top">
+                <div class="tt-card-title-group">
+                  <i data-lucide="cpu" class="tt-card-title-icon" style="width:16px;height:16px"></i>
+                  <span>CPU</span>
+                </div>
+                <button type="button" class="tt-card-info-btn" data-info="cpu" title="Informações sobre Uso da CPU"><i data-lucide="info" style="width:14px;height:14px"></i></button>
+              </div>
+              <div class="tt-chart-canvas-container">
+                <div style="position:absolute; left:0; top:0; font-size:9px; color:#64748b" id="dash-cpu-scale-top">100%</div>
+                <div style="position:absolute; left:0; top:40%; font-size:9px; color:#64748b" id="dash-cpu-scale-mid">50%</div>
+                <div style="position:absolute; left:0; bottom:0; font-size:9px; color:#64748b">0%</div>
+                <canvas id="cpu-chart-canvas" width="280" height="75" style="width:100%; height:100%;"></canvas>
+              </div>
+              <div class="tt-card-footer-stats">
+                <span>Frequência: <strong id="dash-cpu-freq">—</strong></span>
+                <span>Processos ativos: <strong id="dash-proc-count">—</strong></span>
+              </div>
+            </div>
+
+            <!-- RAM Donut Card -->
+            <div class="tt-metric-card" id="card-metric-ram">
+              <div class="tt-card-top">
+                <div class="tt-card-title-group">
+                  <i data-lucide="memory-stick" class="tt-card-title-icon" style="width:16px;height:16px"></i>
+                  <span>Memória RAM</span>
+                </div>
+                <button type="button" class="tt-card-info-btn" data-info="ram" title="Informações sobre Memória RAM"><i data-lucide="info" style="width:14px;height:14px"></i></button>
+              </div>
+              <div class="tt-donut-wrapper">
+                <div class="tt-donut-circle">
+                  <svg width="118" height="118" viewBox="-14 -14 118 118" overflow="visible" style="overflow: visible; width: 118px; height: 118px; margin: -14px; pointer-events: none;">
+                    <circle cx="45" cy="45" r="36" fill="transparent" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>
+                    <circle id="dash-ram-circle" cx="45" cy="45" r="36" fill="transparent" stroke="url(#ramRingGradient2)" stroke-width="9" stroke-dasharray="226.19" stroke-dashoffset="124.4" stroke-linecap="round" transform="rotate(-90 45 45)" style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease, filter 0.4s ease; filter: drop-shadow(0 0 5px rgba(99,102,241,0.5))"/>
+                    <defs>
+                      <linearGradient id="ramRingGradient2" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#6366f1"/>
+                        <stop offset="100%" stop-color="#818cf8"/>
+                      </linearGradient>
+                      <linearGradient id="ramRingGradientWarning" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#d97706"/>
+                        <stop offset="100%" stop-color="#f59e0b"/>
+                      </linearGradient>
+                      <linearGradient id="ramRingGradientCritical" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#dc2626"/>
+                        <stop offset="100%" stop-color="#ef4444"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div class="tt-donut-center-text">
+                    <span class="tt-donut-pct" id="dash-ram-pct">45%</span>
+                    <span class="tt-donut-sub" id="dash-ram-total">de ...</span>
+                  </div>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:8px; font-size:11.5px">
+                  <div><span style="color:#64748b">Disponível: </span><strong id="dash-ram-avail" style="color:#f1f5f9">—</strong></div>
+                  <div><span style="color:#64748b">Em cache: </span><strong id="dash-ram-cache" style="color:#f1f5f9">—</strong></div>
+                </div>
+              </div>
+              <div class="tt-card-footer-stats">
+                <span>Status: <strong id="dash-ram-status" style="color:#22c55e">Otimizado</strong></span>
+                <span>Uso: <strong id="dash-ram-used">—</strong></span>
+              </div>
+            </div>
+
+            <!-- Temperatura da CPU Card -->
+            <div class="tt-metric-card" id="card-metric-temp">
+              <div class="tt-card-top">
+                <div class="tt-card-title-group">
+                  <i data-lucide="thermometer" class="tt-card-title-icon" style="width:16px;height:16px"></i>
+                  <span>Temperatura (CPU)</span>
+                </div>
+                <button type="button" class="tt-card-info-btn" data-info="temp" title="Informações sobre Temperatura da CPU"><i data-lucide="info" style="width:14px;height:14px"></i></button>
+              </div>
+              <div class="tt-temp-wrapper">
+                <svg width="148" height="96" viewBox="-14 -14 148 96" overflow="visible" style="overflow: visible; width: 148px; height: 96px; margin: -14px; pointer-events: none;">
+                  <path d="M 15,62 A 45,45 0 0,1 105,62" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="9" stroke-linecap="round"/>
+                  <path id="dash-temp-gauge-arc" d="M 15,62 A 45,45 0 0,1 105,62" fill="none" stroke="#22c55e" stroke-width="9" stroke-dasharray="142" stroke-dashoffset="40" stroke-linecap="round" style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.5s ease; filter: drop-shadow(0 0 6px rgba(34,197,94,0.5))"/>
+                  <!-- Pivot oculto -->
+                </svg>
+                <div class="tt-temp-center-text">
+                  <span class="tt-temp-val" id="dash-temp-val">—</span>
+                  <span class="tt-temp-sub" id="dash-temp-sub">Térmico</span>
+                </div>
+              </div>
+              <div class="tt-card-footer-stats">
+                <span>Status Térmico: <strong id="dash-temp-status" style="color:#22c55e">Normal</strong></span>
+                <span>Alerta: <strong id="dash-temp-alert">85°C</strong></span>
+              </div>
+            </div>
+
+            <!-- Armazenamento Disco Card -->
+            <div class="tt-metric-card" id="card-metric-disk">
+              <div class="tt-card-top">
+                <div class="tt-card-title-group" style="gap: 6px; align-items: center; flex: 1; min-width: 0;">
+                  <i data-lucide="hard-drive" class="tt-card-title-icon" style="width:16px;height:16px; flex-shrink: 0;"></i>
+                  <span id="dash-disk-title-label" style="white-space: nowrap;">Disco:</span>
+                  <div class="dash-disk-select-wrapper" id="dash-disk-select-wrapper" style="display:inline-flex;">
+                    <select id="dash-disk-select" class="dash-disk-select" title="Escolha qual disco monitorar">
+                      <option value="C:">C: (Windows)</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="button" class="tt-card-info-btn" data-info="disk" title="Informações sobre Armazenamento"><i data-lucide="info" style="width:14px;height:14px"></i></button>
+              </div>
+              <div style="display:flex; flex-direction:column; justify-content:center; height:68px;">
+                <div class="tt-linear-disk-bar">
+                  <div class="tt-linear-disk-fill" id="dash-disk-linear-fill" style="width: 35%;"></div>
+                </div>
+              </div>
+              <div class="tt-card-footer-stats">
+                <span><span id="dash-disk-linear-pct">—</span>% de <strong id="dash-disk-linear-total">—</strong></span>
+                <span>Status: <strong id="dash-disk-linear-status" style="color:#22c55e">Normal</strong></span>
+              </div>
+            </div>
+
+            <!-- Network Card -->
+            <div class="tt-metric-card" id="card-metric-net">
+              <div class="tt-card-top">
+                <div class="tt-card-title-group" style="display:flex; align-items:center; gap:8px;">
+                  <i data-lucide="globe" class="tt-card-title-icon" style="width:16px;height:16px"></i>
+                  <span>Rede</span>
+                  <span id="dash-net-adapter-pill" style="font-size:10px; font-weight:700; color:#38bdf8; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); padding:1px 7px; border-radius:999px; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="Adaptador de Rede Ativo">Online</span>
+                </div>
+                <button type="button" class="tt-card-info-btn" data-info="net" title="Informações sobre Tráfego de Rede"><i data-lucide="info" style="width:14px;height:14px"></i></button>
+              </div>
+              <div class="tt-chart-canvas-container">
+                <div style="position:absolute; left:0; top:0; font-size:9px; color:#64748b" id="dash-net-scale-top">1.0 Mbps</div>
+                <div style="position:absolute; left:0; top:40%; font-size:9px; color:#64748b" id="dash-net-scale-mid">500 Kbps</div>
+                <div style="position:absolute; left:0; bottom:0; font-size:9px; color:#64748b" id="dash-net-scale-bottom">0 Kbps</div>
+                <canvas id="net-chart-canvas" width="280" height="75" style="width:100%; height:100%;"></canvas>
+              </div>
+              <div class="tt-card-footer-stats">
+                <span>Download: <strong id="dash-net-down">0 Kbps</strong></span>
+                <span>Upload: <strong id="dash-net-up">0 Kbps</strong></span>
+              </div>
+            </div>
+
+            <!-- Velocidade do Disco (C:) Card (Velocímetro - substitui Processos em Destaque) -->
+            <div class="tt-metric-card" id="card-metric-speed">
+              <div class="tt-card-top">
+                <div class="tt-card-title-group">
+                  <i data-lucide="gauge" class="tt-card-title-icon" style="width:16px;height:16px"></i>
+                  <span>Velocidade do Disco (C:)</span>
+                </div>
+                <button type="button" class="tt-card-info-btn" data-info="speed" title="Informações sobre Velocidade do Disco"><i data-lucide="info" style="width:14px;height:14px"></i></button>
+              </div>
+              <div class="tt-speedometer-wrapper">
+                <svg width="178" height="113" viewBox="-14 -14 178 113" overflow="visible" style="overflow: visible; width: 178px; height: 113px; margin: -14px; pointer-events: none;">
+                  <!-- Trilha do fundo -->
+                  <path d="M 20,74 A 55,55 0 0,1 130,74" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9" stroke-linecap="round"/>
+                  <!-- Arco ativo de velocidade -->
+                  <path id="dash-disk-speed-arc" d="M 20,74 A 55,55 0 0,1 130,74" fill="none" stroke="#38bdf8" stroke-width="9" stroke-dasharray="172.8" stroke-dashoffset="172.8" stroke-linecap="round" style="transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s ease, filter 0.4s ease; filter: drop-shadow(0 0 6px rgba(56,189,248,0.5))"/>
+                  <!-- Agulha / Ponteiro do Velocímetro -->
+                  <line id="dash-disk-speed-needle" x1="75" y1="74" x2="75" y2="28" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" style="transform-origin: 75px 74px; transform: rotate(-90deg); transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.4s ease; filter: drop-shadow(0 0 4px rgba(56,189,248,0.7));"/>
+                  <circle id="dash-disk-speed-pivot" cx="75" cy="74" r="4.5" fill="#38bdf8" style="transition: fill 0.4s ease; filter: drop-shadow(0 0 3px rgba(56,189,248,0.8));"/>
+                </svg>
+                <div class="tt-speed-center-text">
+                  <span class="tt-speed-val" id="dash-disk-speed-val">0.0</span>
+                  <span class="tt-speed-unit">MB/s</span>
+                </div>
+              </div>
+              <div class="tt-card-footer-stats">
+                <span>Leitura/Escrita: <strong id="dash-disk-io-val">0.0 MB/s</strong></span>
+                <span>Atividade: <strong id="dash-disk-speed-status" style="color:#22c55e">Normal</strong></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rodapé de Ações Técnicas & Exportação -->
+        <footer class="tt-report-footer" style="width:100%; box-sizing:border-box;">
+          <div class="tt-footer-info">
+            <div class="tt-footer-badge">
+              <i data-lucide="shield-check" style="width:14px;height:14px"></i>
+              <span>Monitoramento de Hardware Ativo</span>
+            </div>
+            <span style="color:#64748b">•</span>
+            <span style="font-size:12px; color:#94a3b8">ThunderTools v1.1.1 (Windows Enterprise 64-bit)</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button type="button" class="tt-export-pdf-btn" id="btn-open-service-order" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.25)); border-color: rgba(16, 185, 129, 0.45); color: #a7f3d0;" title="Gerar Ordem de Serviço / Laudo para o Cliente">
+              <i data-lucide="clipboard-check" style="width:16px;height:16px"></i>
+              <span>Ordem de Serviço / Laudo</span>
+            </button>
+            <button type="button" class="tt-export-pdf-btn" id="btn-export-pdf" title="Exportar Relatório do Sistema em PDF">
+              <i data-lucide="file-down" style="width:16px;height:16px"></i>
+              <span>Exportar Relatório PDF</span>
+            </button>
+          </div>
+        </footer>
+      </div>
+
+      <!-- THUNDER IA • DIAGNÓSTICO E SUPORTE ESPECIALIZADO -->
+      <div class="tab-content" id="tab-ia-diagnostico" style="flex-direction: column; flex-wrap: nowrap; width: 100%; gap: 14px; padding: 18px 20px;">
+        
+        <!-- HERO BANNER COM STATUS DE REDE E CONFIGURAÇÃO DE CHAVE -->
+        <div class="ai-hero-header">
+          <div class="ai-hero-left">
+            <div class="ai-hero-icon-box">
+              <i data-lucide="sparkles" style="width:26px;height:26px"></i>
+            </div>
+            <div>
+              <div class="ai-hero-title-row">
+                <span class="ai-hero-title">Thunder IA • Diagnóstico Especializado</span>
+                <span class="ai-model-tag">Thunder IA Neural</span>
+              </div>
+              <div class="ai-hero-desc">Avaliação neural de logs do Windows (CBS, DISM, Event Viewer, BSOD) com geração de causas raízes e comandos de reparo sob medida.</div>
+            </div>
+          </div>
+          <div class="ai-hero-right">
+            <div id="ai-net-status" class="ai-status-pill online">
+              <span class="status-dot"></span> Verificando Conexão...
+            </div>
+            <button type="button" class="ai-btn-config-key" id="btn-toggle-key-panel">
+              <i data-lucide="key" style="width:14px;height:14px"></i>
+              <span>Chave de API</span>
+              <span id="ai-key-status-pill" class="ai-key-pill active">Chave Integrada</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PAINEL RECOLHÍVEL DE CONFIGURAÇÃO DA CHAVE GEMINI (OPCIONAL) -->
+        <div class="ai-key-panel" id="ai-key-config-panel" style="display: none;">
+          <div class="ai-key-panel-inner">
+            <div class="ai-key-lead">
+              <div>
+                <strong>Chave da API Google Gemini</strong> (Opcional • Chave oficial já inclusa no aplicativo)
+                <div style="font-size: 11.5px; color: var(--tool-btn-desc-color); margin-top: 2px;">
+                  O <strong>ThunderTools</strong> já possui uma chave oficial da Thunder IA integrada para todos os usuários. Você só precisa informar uma chave própria caso queira utilizar sua cota individual do Google AI Studio.
+                </div>
+              </div>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" class="ai-link-get-key" onclick="window.api.runCommand('start https://aistudio.google.com/app/apikey'); return false;">
+                <i data-lucide="external-link" style="width:13px;height:13px"></i> Google AI Studio
+              </a>
+            </div>
+            <div class="ai-key-input-row">
+              <div class="ai-key-input-wrapper">
+                <i data-lucide="lock" style="width:14px;height:14px" class="ai-key-icon"></i>
+                <input type="password" id="ai-api-key-input" placeholder="Chave integrada ativa (deixe em branco para usar a padrão)" autocomplete="off" />
+                <button type="button" id="btn-toggle-key-vis" title="Mostrar/Ocultar Chave" class="ai-key-vis-btn">
+                  <i data-lucide="eye" style="width:14px;height:14px"></i>
+                </button>
+              </div>
+              <button type="button" class="ai-btn-action save" id="btn-save-gemini-key">
+                <i data-lucide="save" style="width:14px;height:14px"></i> Salvar Própria
+              </button>
+              <button type="button" class="ai-btn-action test" id="btn-test-gemini-key">
+                <i data-lucide="activity" style="width:14px;height:14px"></i> Testar Conexão
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SELEÇÃO DE MODOS DE DIAGNÓSTICO (3 CARDS DE ENTRADA) -->
+        <div class="ai-modes-grid">
+          <!-- CARD 1: VARREDURA AUTOMÁTICA -->
+          <div class="ai-mode-card featured">
+            <div class="ai-mode-card-head">
+              <div class="ai-mode-icon" style="background:rgba(99, 102, 241, 0.2); color:#818cf8;">
+                <i data-lucide="scan" style="width:20px;height:20px"></i>
+              </div>
+              <div>
+                <div class="ai-mode-title">Varredura Automática do Sistema</div>
+                <div class="ai-mode-sub">Modo Recomendado (1 Clique)</div>
+              </div>
+            </div>
+            <div class="ai-mode-desc">
+              Analisa automaticamente os erros críticos do Event Viewer (48h), integridade do repositório CBS/DISM, spooler, dirty bits e métricas do Windows.
+            </div>
+            <button type="button" class="ai-btn-launch primary" id="btn-ai-auto-scan">
+              <i data-lucide="sparkles" style="width:15px;height:15px"></i>
+              <span>Iniciar Análise Automática com IA</span>
+            </button>
+          </div>
+
+          <!-- CARD 2: LOGS NATIVOS ESPECÍFICOS -->
+          <div class="ai-mode-card">
+            <div class="ai-mode-card-head">
+              <div class="ai-mode-icon" style="background:rgba(16, 185, 129, 0.2); color:#34d399;">
+                <i data-lucide="file-search" style="width:20px;height:20px"></i>
+              </div>
+              <div>
+                <div class="ai-mode-title">Inspeção de Logs Nativos</div>
+                <div class="ai-mode-sub">Arquivos de Subsistemas do Windows</div>
+              </div>
+            </div>
+            <div class="ai-mode-desc">
+              Selecione um log do sistema para que a IA extraia as falhas recentes e analise a causa raiz:
+            </div>
+            <div class="ai-quick-logs-row">
+              <button type="button" class="btn-quick-log" data-log-type="cbs" title="Analisar C:\Windows\Logs\CBS\CBS.log">
+                <i data-lucide="shield-alert" style="width:13px;height:13px"></i> CBS.log
+              </button>
+              <button type="button" class="btn-quick-log" data-log-type="dism" title="Analisar C:\Windows\Logs\DISM\dism.log">
+                <i data-lucide="package-search" style="width:13px;height:13px"></i> DISM.log
+              </button>
+              <button type="button" class="btn-quick-log" data-log-type="event-viewer" title="Analisar Erros Críticos do Visualizador de Eventos">
+                <i data-lucide="alert-octagon" style="width:13px;height:13px"></i> Event Viewer
+              </button>
+              <button type="button" class="btn-quick-log" data-log-type="windows-update" title="Analisar Erros do Windows Update">
+                <i data-lucide="refresh-ccw" style="width:13px;height:13px"></i> Windows Update
+              </button>
+              <button type="button" class="btn-quick-log" data-log-type="bsod" title="Analisar Telas Azuis e BugChecks">
+                <i data-lucide="monitor-x" style="width:13px;height:13px"></i> BSOD / Dumps
+              </button>
+            </div>
+          </div>
+
+          <!-- CARD 3: LOG / TEXTO LIVRE -->
+          <div class="ai-mode-card">
+            <div class="ai-mode-card-head">
+              <div class="ai-mode-icon" style="background:rgba(245, 158, 11, 0.2); color:#fbbf24;">
+                <i data-lucide="file-code" style="width:20px;height:20px"></i>
+              </div>
+              <div>
+                <div class="ai-mode-title">Log ou Código Personalizado</div>
+                <div class="ai-mode-sub">Inserção Manual de Erros</div>
+              </div>
+            </div>
+            <div class="ai-custom-input-box">
+              <textarea id="ai-custom-log-text" rows="2" placeholder="Cole aqui trechos de erro, saída de console PowerShell/CMD ou códigos de falha (ex: 0x800f081f)..."></textarea>
+              <button type="button" class="ai-btn-launch secondary" id="btn-ai-analyze-custom">
+                <i data-lucide="search" style="width:14px;height:14px"></i>
+                <span>Analisar Texto</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEEDBACK DE CARREGAMENTO / PROCESSAMENTO DA IA -->
+        <div class="ai-loading-card" id="ai-loading-card" style="display: none;">
+          <div class="ai-spinner-box">
+            <i data-lucide="loader" style="width:36px;height:36px" class="ai-spin-anim"></i>
+          </div>
+          <div class="ai-loading-text-group">
+            <div class="ai-loading-main-title">Thunder IA • Processando Diagnóstico Neural</div>
+            <div class="ai-loading-status" id="ai-loading-status-text">Higienizando logs e transmitindo ao motor neural...</div>
+            <div class="ai-loading-sub">Aguarde alguns instantes enquanto a IA analisa os padrões de erro e gera o plano de correção.</div>
+          </div>
+        </div>
+
+        <!-- ESTADO VAZIO INICIAL (ANTES DA PRIMEIRA ANÁLISE) -->
+        <div class="ai-empty-state" id="ai-empty-state-card">
+          <div class="ai-empty-icon-wrap">
+            <i data-lucide="cpu" style="width:42px;height:42px"></i>
+          </div>
+          <div class="ai-empty-title">Pronto para Iniciar o Diagnóstico Neural</div>
+          <div class="ai-empty-desc">
+            Selecione uma das opções acima (Varredura Automática, Log Específico ou Inserção Manual) para que a <strong>Thunder IA</strong> avalie as falhas, aponte a causa raiz e forneça os comandos exatos de correção para o computador.
+          </div>
+        </div>
+
+        <!-- DASHBOARD INFORMATIVO DE RESULTADOS (PREENCHIDO DINAMICAMENTE) -->
+        <div class="ai-dashboard-container" id="ai-dashboard-results" style="display: none;"></div>
+
+      </div>
+
       <!-- PROGRAMAS -->
       <div class="tab-content" id="tab-programas">
-        <button class="tool-btn" data-cmd="winget install --id Google.Chrome -e --accept-package-agreements --accept-source-agreements">
+        <!-- Painel Estilo Ninite: Kits Rápidos, Seleção em Lote e Winget Upgrade All -->
+        <div class="tt-programs-toolbar">
+          <div class="tt-programs-toolbar-top">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="startup-picker-main-icon" style="width:36px;height:36px;flex-basis:36px;"><i data-lucide="layers"></i></div>
+              <div>
+                <div style="font-size:14px; font-weight:700; color:var(--tool-btn-title-color);">Instalador em Lote (Modo Ninite) & Runtimes Pós-Formatação</div>
+                <div style="font-size:11.5px; color:var(--tool-btn-desc-color);">Clique no card para instalar individualmente ou marque vários programas (caixas de seleção) para instalar em fila automática</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="modal-btn secondary" id="btn-winget-upgrade-all" style="padding:8px 14px; font-size:12px; display:flex; align-items:center; gap:6px; border-color:rgba(56,189,248,0.4); color:#7dd3fc;">
+                <i data-lucide="refresh-cw" style="width:14px;height:14px"></i> Atualizar Todos os Programas do PC
+              </button>
+              <button type="button" class="modal-btn primary" id="btn-install-selected-progs" disabled style="padding:8px 16px; font-size:12px; display:flex; align-items:center; gap:6px; opacity:0.55;">
+                <i data-lucide="download" style="width:14px;height:14px"></i> Instalar Selecionados (<span id="prog-selected-count">0</span>)
+              </button>
+              <button type="button" class="modal-btn secondary" id="btn-clear-selected-progs" style="padding:8px 12px; font-size:12px;">Limpar</button>
+            </div>
+          </div>
+          <div class="tt-programs-kits-row">
+            <span style="font-size:11px; font-weight:700; color:#818cf8; text-transform:uppercase; letter-spacing:0.4px;">Kits Rápidos 1-Clique:</span>
+            <button type="button" class="ping-preset-pill" data-kit-preset="pos_formatacao">🚀 Kit Pós-Formatação Completo</button>
+            <button type="button" class="ping-preset-pill" data-kit-preset="escritorio">💼 Kit Escritório & PDF</button>
+            <button type="button" class="ping-preset-pill" data-kit-preset="suporte">🛠️ Kit Suporte Técnico & Remoto</button>
+            <button type="button" class="ping-preset-pill" data-kit-preset="gamer">🎮 Kit Gamer & Runtimes</button>
+          </div>
+        </div>
+
+        <button class="tool-btn" data-winget-id="Google.Chrome" data-cmd="winget install --id Google.Chrome -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/google-chrome.png" alt="Chrome"></span>
           <span class="btn-text">
             <span class="btn-title">Google Chrome</span>
             <span class="btn-desc">Navegador Web da Google</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id RARLab.WinRAR -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="RARLab.WinRAR" data-cmd="winget install --id RARLab.WinRAR -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/winrar.png" alt="WinRAR"></span>
           <span class="btn-text">
             <span class="btn-title">WinRAR</span>
             <span class="btn-desc">Compressor de arquivos profissional</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id 7zip.7zip -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="7zip.7zip" data-cmd="winget install --id 7zip.7zip -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/7zip.png" alt="7-Zip"></span>
           <span class="btn-text">
             <span class="btn-title">7-Zip</span>
             <span class="btn-desc">Alternativa open-source leve</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id VideoLAN.VLC -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="VideoLAN.VLC" data-cmd="winget install --id VideoLAN.VLC -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/vlc.png" alt="VLC"></span>
           <span class="btn-text">
             <span class="btn-title">VLC Media Player</span>
             <span class="btn-desc">Reprodutor de vídeo universal</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id Microsoft.VisualStudioCode -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="Microsoft.VisualStudioCode" data-cmd="winget install --id Microsoft.VisualStudioCode -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/vscode.png" alt="VS Code"></span>
           <span class="btn-text">
             <span class="btn-title">VS Code</span>
             <span class="btn-desc">Editor de código profissional</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id Spotify.Spotify -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="Spotify.Spotify" data-cmd="winget install --id Spotify.Spotify -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/spotify.png" alt="Spotify"></span>
           <span class="btn-text">
             <span class="btn-title">Spotify</span>
             <span class="btn-desc">Streaming de música</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id TeamViewer.TeamViewer -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="TeamViewer.TeamViewer" data-cmd="winget install --id TeamViewer.TeamViewer -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/teamviewer.png" alt="TeamViewer"></span>
           <span class="btn-text">
             <span class="btn-title">TeamViewer</span>
             <span class="btn-desc">Acesso remoto e suporte online</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id AnyDeskSoftwareGmbH.AnyDesk -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="AnyDeskSoftwareGmbH.AnyDesk" data-cmd="winget install --id AnyDeskSoftwareGmbH.AnyDesk -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/anydesk.png" alt="AnyDesk"></span>
           <span class="btn-text">
             <span class="btn-title">AnyDesk</span>
             <span class="btn-desc">Software de desktop remoto rápido</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id RustDesk.RustDesk -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="RustDesk.RustDesk" data-cmd="winget install --id RustDesk.RustDesk -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/rustdesk.png" alt="RustDesk"></span>
           <span class="btn-text">
             <span class="btn-title">RustDesk</span>
             <span class="btn-desc">Alternativa de acesso remoto open-source</span>
           </span>
         </button>
-        <button class="tool-btn" data-cmd="winget install --id FastCopy.FastCopy -e --accept-package-agreements --accept-source-agreements">
+        <button class="tool-btn" data-winget-id="FastCopy.FastCopy" data-cmd="winget install --id FastCopy.FastCopy -e --accept-package-agreements --accept-source-agreements">
           <span class="btn-icon"><img src="assets/icons/fastcopy.png" alt="Fast Copy"></span>
           <span class="btn-text">
             <span class="btn-title">Fast Copy</span>
             <span class="btn-desc">Ferramenta gratuita de transferência e cópia de arquivos</span>
           </span>
+        </button>
+        <!-- Novos Runtimes e Utilitários Pós-Formatação -->
+        <button class="tool-btn" data-winget-id="Microsoft.VCRedist.2015+.x64" data-cmd="winget install --id Microsoft.VCRedist.2015+.x64 -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="boxes" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">Visual C++ Redistributable (2015-2022)</span>
+            <span class="btn-desc">Pacote essencial de bibliotecas C++ para jogos e sistemas</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="Microsoft.DotNet.DesktopRuntime.8" data-cmd="winget install --id Microsoft.DotNet.DesktopRuntime.8 -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="cpu" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">Microsoft .NET Desktop Runtime 8</span>
+            <span class="btn-desc">Ambiente obrigatório para aplicações modernas do Windows</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="Microsoft.DirectX" data-cmd="winget install --id Microsoft.DirectX -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="gamepad-2" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">DirectX End-User Runtime</span>
+            <span class="btn-desc">Bibliotecas gráficas para jogos e softwares 3D ( evita erro d3dx9 )</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="Adobe.Acrobat.Reader.64-bit" data-cmd="winget install --id Adobe.Acrobat.Reader.64-bit -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="file-text" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">Adobe Acrobat Reader DC (64-bit)</span>
+            <span class="btn-desc">Leitor oficial de documentos PDF corporativos</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="TheDocumentFoundation.LibreOffice" data-cmd="winget install --id TheDocumentFoundation.LibreOffice -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="file-spreadsheet" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">LibreOffice Suite</span>
+            <span class="btn-desc">Suíte completa de escritório gratuita (Word, Excel, PowerPoint)</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="Brave.Brave" data-cmd="winget install --id Brave.Brave -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="shield" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">Brave Browser</span>
+            <span class="btn-desc">Navegador rápido com bloqueador nativo de anúncios</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="Mozilla.Firefox" data-cmd="winget install --id Mozilla.Firefox -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="globe" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">Mozilla Firefox</span>
+            <span class="btn-desc">Navegador independente de alto desempenho e privacidade</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="CPUID.CPU-Z" data-cmd="winget install --id CPUID.CPU-Z -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="microchip" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">CPUID CPU-Z</span>
+            <span class="btn-desc">Identificação detalhada de processador, placa-mãe e memórias</span>
+          </span>
+        </button>
+        <button class="tool-btn" data-winget-id="CPUID.HWMonitor" data-cmd="winget install --id CPUID.HWMonitor -e --accept-package-agreements --accept-source-agreements">
+          <span class="btn-icon"><i data-lucide="thermometer" style="width:22px;height:22px"></i></span>
+          <span class="btn-text">
+            <span class="btn-title">CPUID HWMonitor</span>
+            <span class="btn-desc">Monitoramento de tensões, ventoinhas e temperaturas físicas</span>
+          </span>
+        </button>
       </div>
 
       <!-- IMPRESSÃO -->
-      <div class="tab-content active" id="tab-impressao">
+      <div class="tab-content" id="tab-impressao">
         <button class="tool-btn" data-cmd="net stop spooler & del /Q /F /S %systemroot%\System32\spool\PRINTERS\* & net start spooler">
           <span class="btn-icon"><i data-lucide="trash-2" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Limpar Fila de Impressão</span><span class="btn-desc">Para o spooler, apaga os jobs e reinicia</span></span>
@@ -1576,6 +2133,14 @@
         <button class="tool-btn danger" data-cmd="start printui.exe /s /t2">
           <span class="btn-icon"><i data-lucide="package-x" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Eliminar Driver de Impressora</span><span class="btn-desc">Abre a janela nativa para remoção de drivers</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -NoProfile -Command &quot;New-Item -Path 'HKLM:\System\CurrentControlSet\Control\Print' -Force | Out-Null; Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Print' -Name 'RpcAuthnLevelPrivacyEnabled' -Value 0 -Type DWord -Force; Restart-Service -Name Spooler -Force; Write-Output 'Correcao de compartilhamento de impressora em rede (0x0000011b / 0x00000709) aplicada e Spooler reiniciado com sucesso!'&quot;">
+          <span class="btn-icon"><i data-lucide="wrench" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Corrigir Erro Rede (0x0000011b / 709)</span><span class="btn-desc">Repara falha de impressão compartilhada em rede e reinicia Spooler</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="PRINTER_MANAGER_PRO" data-special="printer-manager-pro">
+          <span class="btn-icon"><i data-lucide="sliders" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Central de Impressoras &amp; Backup PrintBRM</span><span class="btn-desc">Defina padrão, imprima página de teste ou exporte/importe drivers</span></span>
         </button>
       </div>
 
@@ -1597,6 +2162,14 @@
           <span class="btn-icon"><i data-lucide="search" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Forçar Verificação</span><span class="btn-desc">Força detecção e download de atualizações</span></span>
         </button>
+        <button class="tool-btn" data-cmd="WU_PAUSE_MANAGER" data-special="wu-pause-manager">
+          <span class="btn-icon"><i data-lucide="pause-circle" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Pausar Updates &amp; Bloquear Drivers</span><span class="btn-desc">Pause por 7, 30 ou 365 dias e evite substituição de drivers</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="WU_HISTORY_KBS" data-special="wu-history-kbs">
+          <span class="btn-icon"><i data-lucide="list-checks" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Histórico e Desinstalação de KBs</span><span class="btn-desc">Lista atualizações instaladas e permite remover KBs problemáticos</span></span>
+        </button>
       </div>
 
       <!-- DESEMPENHO -->
@@ -1607,18 +2180,34 @@
         </button>
         <button class="tool-btn" data-cmd="powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c">
           <span class="btn-icon"><i data-lucide="zap" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Modo Alto Desempenho</span><span class="btn-desc">Ativa o plano de energia máximo</span></span>
+          <span class="btn-text"><span class="btn-title">Modo Alto Desempenho</span><span class="btn-desc">Plano clássico: prioriza clock da CPU sobre economia de energia</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-ChildItem 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches' | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name StateFlags0001 -Value 2 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null }; cleanmgr /sagerun:1&quot;">
+        <button class="tool-btn" data-cmd="ACTIVATE_ULTIMATE_PERFORMANCE" data-special="ultimate-performance">
+          <span class="btn-icon"><i data-lucide="flame" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Desempenho Máximo (Ultimate)</span><span class="btn-desc">Plano oculto para Workstations: latência zero de hardware e ASPM desativado</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="SMART_RAM_CLEANER" data-special="smart-ram-cleaner">
+          <span class="btn-icon"><i data-lucide="sparkles" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Limpador Inteligente de Memória RAM</span><span class="btn-desc">Esvazia cache Standby/Working Set sem reiniciar o PC</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="start cleanmgr.exe /d C:">
           <span class="btn-icon"><i data-lucide="trash" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Limpeza de Disco</span><span class="btn-desc">Executa o limpador de disco do Windows</span></span>
+          <span class="btn-text"><span class="btn-title">Limpeza de Disco</span><span class="btn-desc">Abre o utilitário nativo de limpeza do Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="TOP_PROCESSES_MODAL" data-special="top-processes-modal">
+          <span class="btn-icon"><i data-lucide="activity" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Gerenciador Top Processos (CPU/RAM)</span><span class="btn-desc">Veja os maiores consumidores de memória e encerre tarefas</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="VISUAL_EFFECTS_MODAL" data-special="visual-effects-modal">
+          <span class="btn-icon"><i data-lucide="sliders" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Otimizar Efeitos Visuais &amp; Transparência</span><span class="btn-desc">Desativa animações pesadas para PCs com pouca RAM</span></span>
         </button>
         <button class="tool-btn" data-cmd="tasklist /fo table | more">
           <span class="btn-icon"><i data-lucide="list" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Processos Ativos</span><span class="btn-desc">Lista todos os processos em execução</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, Manufacturer | Format-Table -AutoSize&quot;">
-          <span class="btn-icon"><i data-lucide="cpu" style="width:22px;height:22px"></i></span>
+        <button class="tool-btn" data-special="ram-info" data-cmd="powershell -Command &quot;Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, Manufacturer | Format-Table -AutoSize&quot;">
+          <span class="btn-icon"><i data-lucide="memory-stick" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Info de Memória RAM</span><span class="btn-desc">Exibe detalhes dos módulos de RAM</span></span>
         </button>
         <button class="tool-btn" data-cmd="start mdsched">
@@ -1657,6 +2246,18 @@
           <span class="btn-icon"><i data-lucide="pie-chart" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Espaço Livre em Disco</span><span class="btn-desc">Escolha uma unidade e veja recomendações para ela</span></span>
         </button>
+        <button class="tool-btn" data-cmd="SMART_HEALTH_MODAL" data-special="smart-health-modal">
+          <span class="btn-icon"><i data-lucide="heart-pulse" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Saúde S.M.A.R.T. Detalhada (SSD/HDD)</span><span class="btn-desc">Vida útil %, temperatura, horas ligado e contadores de erro</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="STORAGE_SCANNER_MODAL" data-special="storage-scanner-modal">
+          <span class="btn-icon"><i data-lucide="folder-search" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Radar de Pastas e Arquivos Gigantes</span><span class="btn-desc">Localiza os 25 maiores arquivos do PC para liberar espaço</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="TOGGLE_HIBERNATION" data-special="toggle-hibernation">
+          <span class="btn-icon"><i data-lucide="moon" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Gerenciar Hibernação (hiberfil.sys)</span><span class="btn-desc">Desative a hibernação para recuperar de 4 GB a 16 GB no SSD</span></span>
+        </button>
       </div>
 
       <!-- REDE -->
@@ -1665,7 +2266,7 @@
           <span class="btn-icon"><i data-lucide="rotate-ccw" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Resetar Winsock/TCP</span><span class="btn-desc">Reseta configurações de rede (requer reinício)</span></span>
         </button>
-        <button class="tool-btn" data-cmd="cmdkey /list & for /f &quot;tokens=1,2 delims= &quot; %G in ('cmdkey /list ^| findstr /i /c:Target /c:Destino') do cmdkey /delete:%H">
+        <button class="tool-btn" data-cmd="powershell -NoProfile -Command &quot;$creds = cmdkey /list | Select-String -Pattern 'Target:|Destino:'; $count = 0; foreach ($c in $creds) { $t = ($c.Line -replace '^\s*(Target|Destino):\s*','').Trim(); if ($t -and $t -notmatch '(?i)MicrosoftAccount|Virtualapp|WindowsLive|SSO_POP') { cmdkey /delete:$t | Out-Null; $count++ } }; if ($count -gt 0) { Write-Output ('Total de ' + $count + ' credencial(is) de rede removida(s) com sucesso.') } else { Write-Output 'Nenhuma credencial de rede antiga precisava ser removida.' }&quot;">
           <span class="btn-icon"><i data-lucide="key-round" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Limpar Credenciais de Rede</span><span class="btn-desc">Remove senhas e credenciais antigas armazenadas</span></span>
         </button>
@@ -1701,6 +2302,18 @@
           <span class="btn-icon"><i data-lucide="search-code" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Ping em IP Específico</span><span class="btn-desc">Realiza teste de conexão para um IP ou Host definido</span></span>
         </button>
+        <button class="tool-btn" data-cmd="WIFI_PASSWORDS_MODAL" data-special="wifi-passwords-modal">
+          <span class="btn-icon"><i data-lucide="wifi" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Senhas de Wi-Fi Salvas</span><span class="btn-desc">Exibe todas as redes Wi-Fi salvas e permite copiar a senha</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="DNS_BENCHMARK_MODAL" data-special="dns-benchmark-modal">
+          <span class="btn-icon"><i data-lucide="zap" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Seletor DNS &amp; Benchmark de Latência</span><span class="btn-desc">Testa Cloudflare, Google, Quad9 e OpenDNS e aplica o mais rápido</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="LAN_SCANNER_MODAL" data-special="lan-scanner-modal">
+          <span class="btn-icon"><i data-lucide="radar" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Scanner de Rede Local (LAN) &amp; SMB</span><span class="btn-desc">Descobre IPs conectados na rede e corrige compartilhamento de pastas</span></span>
+        </button>
       </div>
 
       <!-- SISTEMA -->
@@ -1713,11 +2326,11 @@
           <span class="btn-icon"><i data-lucide="clock" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Sincronizar Data/Hora</span><span class="btn-desc">Ajusta data e hora automaticamente via internet</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Get-CimInstance Win32_BIOS | Select-Object Manufacturer, SerialNumber, SMBIOSBIOSVersion | Format-List&quot;">
+        <button class="tool-btn" data-cmd="powershell -NoProfile -Command &quot;$b = Get-CimInstance Win32_BIOS; $mb = Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue; [PSCustomObject]@{ Manufacturer = $b.Manufacturer; SerialNumber = $b.SerialNumber; SMBIOSBIOSVersion = $b.SMBIOSBIOSVersion; ReleaseDate = if($b.ReleaseDate){$b.ReleaseDate.ToString('dd/MM/yyyy')}else{'N/A'}; BaseBoard = if($mb){($mb.Manufacturer + ' ' + $mb.Product).Trim()}else{'Placa-Mãe Padrão'}; Status = $b.Status } | Format-List&quot;">
           <span class="btn-icon"><i data-lucide="key" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Info da BIOS</span><span class="btn-desc">Número de série e versão da BIOS</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;(Get-WmiObject -query 'select * from SoftwareLicensingService').OA3xOriginalProductKey&quot;">
+        <button class="tool-btn" data-cmd="powershell -NoProfile -Command &quot;$k = (Get-CimInstance SoftwareLicensingService).OA3xOriginalProductKey; if ($k) { Write-Output ('Chave OEM detectada: ' + $k) } else { Write-Output 'Licenca Digital ou Volume (Nenhuma chave OEM fisica gravada na BIOS).' }&quot;">
           <span class="btn-icon"><i data-lucide="key-round" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Chave do Windows</span><span class="btn-desc">Exibe a chave de produto original</span></span>
         </button>
@@ -1728,6 +2341,22 @@
         <button class="tool-btn" data-cmd="gpupdate /force">
           <span class="btn-icon"><i data-lucide="refresh-ccw" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Forçar Group Policy</span><span class="btn-desc">Atualiza políticas de grupo</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="BATTERY_HEALTH_MODAL" data-special="battery-health-modal">
+          <span class="btn-icon"><i data-lucide="battery-charging" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Relatório de Saúde da Bateria</span><span class="btn-desc">Verifica desgaste da bateria de notebooks e gera laudo HTML</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="ADVANCED_REBOOT_MODAL" data-special="advanced-reboot-modal">
+          <span class="btn-icon"><i data-lucide="cpu" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Reiniciar na BIOS/UEFI ou Modo Seguro</span><span class="btn-desc">Entra direto no Setup da placa-mãe ou ambiente de recuperação</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="BSOD_ANALYZER_MODAL" data-special="bsod-analyzer-modal">
+          <span class="btn-icon"><i data-lucide="alert-octagon" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Analisador de Tela Azul (BSOD)</span><span class="btn-desc">Audita desligamentos inesperados (ID 41) e erros críticos</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="DRIVER_BACKUP_MODAL" data-special="driver-backup-modal">
+          <span class="btn-icon"><i data-lucide="hard-drive-download" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Central de Backup &amp; Restauração de Drivers</span><span class="btn-desc">Crie e restaure backups completos de drivers com 1 clique</span></span>
         </button>
         <button class="tool-btn danger" data-cmd="shutdown /r /t 30 /c &quot;Reiniciando via ThunderTools&quot;">
           <span class="btn-icon"><i data-lucide="power" style="width:22px;height:22px"></i></span>
@@ -1741,7 +2370,19 @@
 
       <!-- SEGURANÇA -->
       <div class="tab-content" id="tab-seguranca">
-        <button class="tool-btn" data-cmd="powershell -Command &quot;Start-MpScan -ScanType QuickScan&quot;">
+        <button class="tool-btn" data-cmd="PRIVACY_DEBLOAT_PANEL" data-special="privacy-debloat-panel">
+          <span class="btn-icon"><i data-lucide="shield-off" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Painel de Privacidade &amp; Debloat Seguro</span><span class="btn-desc">Desative telemetria, anúncios no Iniciar, Bing na busca e Copilot</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="AUDIT_PORTS_PROCESSES" data-special="audit-ports-processes">
+          <span class="btn-icon"><i data-lucide="radar" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Auditoria de Portas por Processo</span><span class="btn-desc">Cruza portas e conexões com o nome real de serviços e executáveis (.exe)</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="HOSTS_MANAGER" data-special="hosts-manager">
+          <span class="btn-icon"><i data-lucide="file-lock" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Visualizar e Restaurar Arquivo HOSTS</span><span class="btn-desc">Verifica bloqueios maliciosos e restaura o padrão da Microsoft</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -Command &quot;Start-MpScan -ScanType QuickScan -AsJob&quot;">
           <span class="btn-icon"><i data-lucide="shield-check" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Scan Rápido Defender</span><span class="btn-desc">Executa verificação rápida de vírus</span></span>
         </button>
@@ -1789,19 +2430,35 @@
           <span class="btn-icon"><i data-lucide="trash-2" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Limpar Arquivos Temporários</span><span class="btn-desc">Remove temp, prefetch e cache do Windows</span></span>
         </button>
-        <button class="tool-btn" data-cmd="OPEN_STARTUP_APPS" data-special="startup-apps">
-          <span class="btn-icon"><i data-lucide="play-circle" style="width:22px;height:22px"></i></span>
-          <span class="btn-text"><span class="btn-title">Programas de Inicialização</span><span class="btn-desc">Abre a janela nativa de inicialização do Windows</span></span>
+        <button class="tool-btn" data-cmd="MANAGE_STARTUP_FULL" data-special="manage-startup-full">
+          <span class="btn-icon"><i data-lucide="list-Filter" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Gerenciador Completo de Inicialização</span><span class="btn-desc">Liste, ative, desative ou remova entradas que iniciam com o Windows</span></span>
         </button>
         <button class="tool-btn" data-cmd="ADD_STARTUP_ENTRY" data-special="add-startup-entry">
           <span class="btn-icon"><i data-lucide="rocket" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Iniciar com o Windows</span><span class="btn-desc">Adiciona um programa ou serviço à inicialização automática</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;$ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Ethernet*' -and $_.Status -eq 'Up' } | Select-Object -First 1; if (-not $ad) { $ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Ethernet*' } | Select-Object -First 1 }; if ($ad) { Set-DnsClientServerAddress -InterfaceIndex $ad.InterfaceIndex -ServerAddresses @('8.8.8.8','8.8.4.4') } else { throw 'Adaptador Ethernet nao encontrado' }&quot;">
+        <button class="tool-btn" data-cmd="OPEN_STARTUP_APPS" data-special="startup-apps">
+          <span class="btn-icon"><i data-lucide="play-circle" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Programas de Inicialização (Nativo)</span><span class="btn-desc">Abre a janela nativa de inicialização do Windows</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="MANAGE_RESTORE_POINTS" data-special="manage-restore-points">
+          <span class="btn-icon"><i data-lucide="history" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Gerenciador de Pontos de Restauração</span><span class="btn-desc">Liste pontos existentes com data/descrição, crie ou restaure o sistema</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -NoProfile -Command &quot;taskkill /f /im explorer.exe 2>$null; Start-Sleep -Milliseconds 600; Remove-Item -Path \&quot;$env:LOCALAPPDATA\IconCache.db\&quot; -Force -ErrorAction SilentlyContinue; Remove-Item -Path \&quot;$env:LOCALAPPDATA\Microsoft\Windows\Explorer\iconcache*\&quot; -Force -ErrorAction SilentlyContinue; Remove-Item -Path \&quot;$env:LOCALAPPDATA\Microsoft\Windows\Explorer\thumbcache*\&quot; -Force -ErrorAction SilentlyContinue; Start-Process explorer.exe; Write-Output 'Cache de icones/miniaturas reconstruido e Windows Explorer reiniciado com sucesso!'&quot;">
+          <span class="btn-icon"><i data-lucide="refresh-cw" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Reparar Cache de Ícones &amp; Explorer</span><span class="btn-desc">Limpa iconcache/thumbcache e reinicia o explorer.exe</span></span>
+        </button>
+        <button class="tool-btn danger" data-cmd="REMOVE_UWP_BLOATWARE" data-special="remove-uwp-bloatware">
+          <span class="btn-icon"><i data-lucide="package-minus" style="width:22px;height:22px"></i></span>
+          <span class="btn-text"><span class="btn-title">Desinstalador de Bloatware (Apps UWP)</span><span class="btn-desc">Seleção em lote para remover Xbox, Clima, Notícias, Cortana, Skype, etc.</span></span>
+        </button>
+        <button class="tool-btn" data-cmd="powershell -NoProfile -Command &quot;$ad = Get-NetAdapter | Where-Object { ($_.InterfaceAlias -like '*Ethernet*' -or $_.InterfaceAlias -like '*Local*') -and $_.Status -eq 'Up' } | Select-Object -First 1; if (-not $ad) { $ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Ethernet*' -or $_.InterfaceAlias -like '*Local*' } | Select-Object -First 1 }; if ($ad) { Set-DnsClientServerAddress -InterfaceIndex $ad.InterfaceIndex -ServerAddresses @('8.8.8.8','8.8.4.4'); Write-Output ('DNS do Google configurado com sucesso no adaptador: ' + $ad.InterfaceAlias) } else { Write-Output 'Nenhum adaptador Ethernet ativo encontrado no momento.' }&quot;">
           <span class="btn-icon"><i data-lucide="globe" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">DNS Google (Ethernet)</span><span class="btn-desc">Configura DNS 8.8.8.8 e 8.8.4.4</span></span>
         </button>
-        <button class="tool-btn" data-cmd="powershell -Command &quot;$ad = Get-NetAdapter | Where-Object { ($_.InterfaceAlias -like '*Wi-Fi*' -or $_.InterfaceAlias -like '*Wireless*') -and $_.Status -eq 'Up' } | Select-Object -First 1; if (-not $ad) { $ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Wi-Fi*' -or $_.InterfaceAlias -like '*Wireless*' } | Select-Object -First 1 }; if ($ad) { Set-DnsClientServerAddress -InterfaceIndex $ad.InterfaceIndex -ServerAddresses @('1.1.1.1','1.0.0.1') } else { throw 'Adaptador Wi-Fi nao encontrado' }&quot;">
+        <button class="tool-btn" data-cmd="powershell -NoProfile -Command &quot;$ad = Get-NetAdapter | Where-Object { ($_.InterfaceAlias -like '*Wi-Fi*' -or $_.InterfaceAlias -like '*Wireless*' -or $_.InterfaceAlias -like '*Sem Fio*') -and $_.Status -eq 'Up' } | Select-Object -First 1; if (-not $ad) { $ad = Get-NetAdapter | Where-Object { $_.InterfaceAlias -like '*Wi-Fi*' -or $_.InterfaceAlias -like '*Wireless*' -or $_.InterfaceAlias -like '*Sem Fio*' } | Select-Object -First 1 }; if ($ad) { Set-DnsClientServerAddress -InterfaceIndex $ad.InterfaceIndex -ServerAddresses @('1.1.1.1','1.0.0.1'); Write-Output ('DNS Cloudflare configurado com sucesso no adaptador: ' + $ad.InterfaceAlias) } else { Write-Output 'Nenhum adaptador Wi-Fi ativo encontrado no momento.' }&quot;">
           <span class="btn-icon"><i data-lucide="wifi" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">DNS Cloudflare (Wi-Fi)</span><span class="btn-desc">Configura DNS 1.1.1.1 e 1.0.0.1</span></span>
         </button>
@@ -1813,7 +2470,7 @@
           <span class="btn-icon"><i data-lucide="zap" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Otimizar SSD (TRIM)</span><span class="btn-desc">Executa comando TRIM no SSD</span></span>
         </button>
-        <button class="tool-btn danger" data-cmd="powershell -Command &quot;Checkpoint-Computer -Description 'ThunderTools Restore Point' -RestorePointType 'MODIFY_SETTINGS'&quot;">
+        <button class="tool-btn danger" data-cmd="powershell -NoProfile -Command &quot;try { Enable-ComputerRestore -Drive 'C:\' -ErrorAction SilentlyContinue; Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore' -Name 'SystemRestorePointCreationFrequency' -Value 0 -Type DWord -ErrorAction SilentlyContinue; Checkpoint-Computer -Description 'ThunderTools Restore Point' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; Write-Output 'Ponto de restauracao criado com sucesso.' } catch { if ($_.Exception.Message -match '1440') { Write-Output 'Ponto de restauracao recente ja existe no sistema (intervalo de seguranca do Windows).' } else { Write-Output ('Status do Ponto de Restauracao: ' + $_.Exception.Message) } }&quot;">
           <span class="btn-icon"><i data-lucide="save" style="width:22px;height:22px"></i></span>
           <span class="btn-text"><span class="btn-title">Criar Ponto de Restauração</span><span class="btn-desc">Cria backup do estado atual do sistema</span></span>
         </button>
@@ -1825,11 +2482,16 @@
 
       <!-- HISTÓRICO -->
       <div class="tab-content" id="tab-historico" style="flex-direction: column; flex-wrap: nowrap; width: 100%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; width: 100%;">
-          <h2 style="font-size: 18px; color: #e8eaed; font-weight: 600;">Histórico de Comandos</h2>
-          <button id="clear-history" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: 'Raleway', sans-serif; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="trash-2" style="width:14px;height:14px"></i>Limpar Histórico
-          </button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; width: 100%; flex-wrap: wrap; gap: 10px;">
+          <h2 style="font-size: 18px; color: #e8eaed; font-weight: 600;">Histórico de Comandos &amp; Ordem de Serviço</h2>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <button id="btn-history-service-order" style="background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.38); color: #6ee7b7; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'Raleway', sans-serif; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="clipboard-check" style="width:14px;height:14px"></i>Gerar Ordem de Serviço / Laudo (PDF/HTML)
+            </button>
+            <button id="clear-history" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-family: 'Raleway', sans-serif; transition: all 0.3s ease; display: flex; align-items: center; gap: 6px;">
+              <i data-lucide="trash-2" style="width:14px;height:14px"></i>Limpar Histórico
+            </button>
+          </div>
         </div>
         <div id="history-list" style="display: flex; flex-direction: column; gap: 8px; width: 100%;"></div>
       </div>

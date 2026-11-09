@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThunderTools — Ferramentas de Diagnóstico Windows</title>
-  <meta name="description" content="ThunderTools: suite completa de ferramentas de manutenção e diagnóstico para Windows. Download gratuito.">
+  <title>ThunderTools — Diagnóstico Avançado, Otimização Windows & Thunder IA</title>
+  <meta name="description" content="ThunderTools: A mais completa suíte de manutenção e diagnóstico Windows com a revolucionária Thunder IA integrada, laudos em PDF e mais de 60 ferramentas.">
   <link rel="icon" href="assets/icon.ico" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* ═══════════════════════════════════════════════════════════
        RESET & BASE
@@ -18,19 +18,23 @@
     }
 
     :root {
-      --bg-primary:    #06060e;
-      --bg-secondary:  #0c0c1a;
-      --bg-card:       rgba(15, 15, 30, 0.65);
-      --border-card:   rgba(99, 102, 241, 0.12);
+      --bg-primary:    #05050d;
+      --bg-secondary:  #0a0a18;
+      --bg-card:       rgba(15, 17, 34, 0.72);
+      --border-card:   rgba(99, 102, 241, 0.14);
       --accent:        #6366f1;
       --accent-light:  #818cf8;
       --accent-glow:   rgba(99, 102, 241, 0.35);
-      --text-primary:  #f1f5f9;
+      --ai-purple:     #a855f7;
+      --ai-cyan:       #06b6d4;
+      --ai-glow:       rgba(168, 85, 247, 0.45);
+      --text-primary:  #f8fafc;
       --text-secondary:#94a3b8;
       --text-muted:    #64748b;
-      --success:       #22c55e;
+      --success:       #10b981;
       --warning:       #f59e0b;
-      --radius:        16px;
+      --danger:        #ef4444;
+      --radius:        18px;
       --radius-sm:     10px;
     }
 
@@ -45,165 +49,342 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       ANIMATED BACKGROUND
+       ANIMATED BACKGROUNDS & GLOWS
        ═══════════════════════════════════════════════════════════ */
     .bg-grid {
       position: fixed; inset: 0; z-index: 0; pointer-events: none;
       background-image:
-        linear-gradient(rgba(99,102,241,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(99,102,241,0.03) 1px, transparent 1px);
-      background-size: 60px 60px;
+        linear-gradient(rgba(99,102,241,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.035) 1px, transparent 1px);
+      background-size: 55px 55px;
     }
 
     .bg-glow {
       position: fixed; z-index: 0; pointer-events: none;
-      width: 700px; height: 700px; border-radius: 50%;
-      filter: blur(160px); opacity: 0.3;
+      width: 750px; height: 750px; border-radius: 50%;
+      filter: blur(170px); opacity: 0.28;
     }
     .bg-glow--1 { top: -200px; left: -100px; background: #4f46e5; }
-    .bg-glow--2 { bottom: -300px; right: -150px; background: #7c3aed; opacity: 0.2; }
+    .bg-glow--2 { bottom: -250px; right: -150px; background: #9333ea; opacity: 0.22; }
+    .bg-glow--ai { top: 40%; right: -200px; background: #06b6d4; opacity: 0.15; }
 
     /* ═══════════════════════════════════════════════════════════
-       NAV
+       NAVBAR
        ═══════════════════════════════════════════════════════════ */
     nav {
       position: fixed; top: 0; width: 100%; z-index: 100;
       backdrop-filter: blur(20px) saturate(1.4);
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
-      background: rgba(6, 6, 14, 0.72);
-      border-bottom: 1px solid rgba(99,102,241,0.08);
-      transition: background 0.3s;
+      background: rgba(5, 5, 13, 0.85);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+      transition: all 0.3s ease;
     }
     .nav-inner {
-      max-width: 1200px; margin: 0 auto;
+      max-width: 1240px; margin: 0 auto;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 32px;
+      padding: 12px 32px;
+      position: relative;
     }
     .nav-brand {
-      display: flex; align-items: center; gap: 12px;
-      text-decoration: none; color: var(--text-primary);
+      display: flex; align-items: center;
+      text-decoration: none;
     }
-    .nav-brand img { height: 36px; }
-    .nav-brand span { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
-    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-brand img {
+      height: 34px; width: auto; display: block;
+      transition: transform 0.2s ease;
+    }
+    .nav-brand img:hover { transform: scale(1.02); }
+    .nav-links {
+      display: flex; align-items: center; gap: 26px; list-style: none;
+    }
     .nav-links a {
       color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
-      font-weight: 500; transition: color 0.2s;
+      font-weight: 500; transition: color 0.2s ease;
     }
     .nav-links a:hover { color: var(--accent-light); }
-    .nav-cta {
-      padding: 10px 24px; background: var(--accent); color: #fff;
-      border-radius: 999px; font-weight: 600; font-size: 0.88rem;
-      text-decoration: none; transition: all 0.25s;
-      box-shadow: 0 0 20px var(--accent-glow);
+
+    .nav-ai-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 999px;
+      background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(99,102,241,0.18));
+      border: 1px solid rgba(168,85,247,0.38) !important;
+      color: #e9d5ff !important; font-weight: 600 !important;
+      box-shadow: 0 0 14px rgba(168,85,247,0.22);
+      transition: all 0.25s ease !important;
     }
-    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 0 30px var(--accent-glow); }
+    .nav-ai-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 22px rgba(168,85,247,0.45);
+      border-color: rgba(168,85,247,0.6) !important;
+    }
+
+    .nav-cta {
+      padding: 9px 22px;
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      color: #fff;
+      border-radius: 999px; font-weight: 600; font-size: 0.86rem;
+      text-decoration: none; transition: all 0.25s ease;
+      box-shadow: 0 0 18px var(--accent-glow);
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 0 28px var(--accent-glow); }
+
+    .nav-mobile-toggle {
+      display: none;
+      background: rgba(15, 17, 34, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
 
     /* ═══════════════════════════════════════════════════════════
-       HERO
+       HERO SECTION (REFORMULADO - PADRÃO SAAS PREMIUM)
        ═══════════════════════════════════════════════════════════ */
     .hero {
       position: relative; z-index: 1;
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
-      text-align: center; padding: 140px 32px 80px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 70px;
+      overflow: hidden;
     }
-    .hero-content { max-width: 800px; }
+    .hero-content {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex; flex-direction: column; align-items: center;
+      position: relative; z-index: 2;
+    }
 
-    .hero-badge {
+    .hero-badge-pill {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 18px; border-radius: 999px;
-      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);
-      font-size: 0.82rem; font-weight: 500; color: var(--accent-light);
-      margin-bottom: 28px;
+      padding: 6px 16px; border-radius: 999px;
+      background: rgba(168, 85, 247, 0.08);
+      border: 1px solid rgba(168, 85, 247, 0.32);
+      color: #d8b4fe;
+      font-size: 0.78rem; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      margin-bottom: 22px;
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
       animation: fadeInDown 0.6s ease-out;
     }
-    .hero-badge .dot {
-      width: 7px; height: 7px; border-radius: 50%; background: var(--success);
-      animation: pulse-dot 2s infinite;
+    .hero-badge-icon {
+      width: 13px; height: 13px; color: #c084fc;
     }
 
-    .hero h1 {
-      font-size: clamp(2.8rem, 6vw, 4.5rem);
-      font-weight: 900; letter-spacing: -0.03em;
-      line-height: 1.08;
-      background: linear-gradient(135deg, #f1f5f9 30%, #818cf8 70%, #a78bfa);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .hero-title {
+      font-size: clamp(2.2rem, 4.3vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: #ffffff;
+      max-width: 880px;
+      margin: 0 auto;
       animation: fadeInUp 0.7s ease-out;
     }
+    .hero-gradient-text {
+      background: linear-gradient(135deg, #c084fc 20%, #818cf8 60%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
-    .hero p {
-      margin-top: 24px; font-size: 1.15rem; color: var(--text-secondary);
-      max-width: 580px; margin-left: auto; margin-right: auto; line-height: 1.7;
+    .hero-desc {
+      margin: 20px auto 0;
+      font-size: 1.08rem;
+      color: #94a3b8;
+      max-width: 660px;
+      line-height: 1.68;
+      font-weight: 400;
       animation: fadeInUp 0.8s ease-out 0.15s both;
     }
 
     .hero-actions {
-      display: flex; gap: 16px; justify-content: center; margin-top: 44px;
-      flex-wrap: wrap;
-      animation: fadeInUp 0.9s ease-out 0.3s both;
+      display: flex; gap: 14px; justify-content: center; align-items: center;
+      margin-top: 32px; flex-wrap: wrap;
+      animation: fadeInUp 0.9s ease-out 0.25s both;
     }
 
+    /* ═══════════════════════════════════════════════════════════
+       SISTEMA DE BOTÕES (GLOBAL)
+       ═══════════════════════════════════════════════════════════ */
     .btn {
-      display: inline-flex; align-items: center; gap: 10px;
-      padding: 16px 36px; border-radius: 999px; font-weight: 600;
-      font-size: 1rem; text-decoration: none; transition: all 0.3s;
-      cursor: pointer; border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 32px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.98rem;
+      text-decoration: none !important;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+      line-height: 1.2;
+      box-sizing: border-box;
     }
+    .btn svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    /* Botões Primários / Thunder IA / Download Principal */
+    .btn-hero-primary,
+    .btn-ai,
     .btn-primary {
-      background: linear-gradient(135deg, #6366f1, #7c3aed);
-      color: #fff;
-      box-shadow: 0 4px 30px var(--accent-glow);
+      background: linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #4f46e5 100%) !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      box-shadow: 0 4px 25px rgba(124, 58, 237, 0.45);
+      text-decoration: none !important;
     }
+    .btn-hero-primary:hover,
+    .btn-ai:hover,
     .btn-primary:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 40px rgba(99,102,241,0.5);
-    }
-    .btn-secondary {
-      background: rgba(99,102,241,0.08);
-      border: 1px solid rgba(99,102,241,0.18);
-      color: var(--accent-light);
-    }
-    .btn-secondary:hover {
-      background: rgba(99,102,241,0.14);
       transform: translateY(-2px);
+      box-shadow: 0 8px 35px rgba(124, 58, 237, 0.7);
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      color: #ffffff !important;
+      text-decoration: none !important;
     }
 
-    .btn svg { width: 20px; height: 20px; }
-
-    .hero-meta {
-      margin-top: 32px; display: flex; gap: 32px; justify-content: center;
-      color: var(--text-muted); font-size: 0.85rem;
-      animation: fadeInUp 1s ease-out 0.45s both;
+    /* Botões Secundários / Portátil / Navegação */
+    .btn-hero-secondary,
+    .btn-secondary {
+      background: rgba(15, 17, 34, 0.8) !important;
+      color: #e2e8f0 !important;
+      border: 1px solid rgba(168, 85, 247, 0.35) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      text-decoration: none !important;
     }
-    .hero-meta span { display: flex; align-items: center; gap: 6px; }
+    .btn-hero-secondary:hover,
+    .btn-secondary:hover {
+      background: rgba(168, 85, 247, 0.16) !important;
+      border-color: rgba(168, 85, 247, 0.65) !important;
+      color: #ffffff !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(168, 85, 247, 0.25);
+      text-decoration: none !important;
+    }
+
+    .btn-svg {
+      width: 18px; height: 18px; flex-shrink: 0;
+    }
+
+    /* Indicadores de Diferenciais */
+    .hero-differentials {
+      display: flex; gap: 26px; justify-content: center; align-items: center;
+      margin-top: 34px; flex-wrap: wrap;
+      animation: fadeInUp 1s ease-out 0.35s both;
+    }
+    .diff-item {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.85rem; font-weight: 500; color: #94a3b8;
+      white-space: nowrap;
+    }
+    .diff-icon {
+      width: 22px; height: 22px; border-radius: 6px;
+      background: rgba(99, 102, 241, 0.12); color: #818cf8;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .diff-icon svg { width: 13px; height: 13px; }
+    .diff-icon--purple {
+      background: rgba(168, 85, 247, 0.12); color: #c084fc;
+    }
+    .diff-icon--cyan {
+      background: rgba(6, 182, 212, 0.12); color: #38bdf8;
+    }
+
+    /* Apresentação Visual do Software (Showcase Real) */
+    .hero-showcase {
+      position: relative;
+      max-width: 1040px;
+      margin: 46px auto 0;
+      width: 100%;
+      animation: fadeInUp 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+    }
+    .hero-showcase-glow {
+      position: absolute;
+      top: 10%; left: 50%;
+      transform: translateX(-50%);
+      width: 80%; height: 70%;
+      background: radial-gradient(ellipse at center, rgba(168, 85, 247, 0.22) 0%, rgba(99, 102, 241, 0.14) 50%, transparent 75%);
+      filter: blur(55px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-showcase-frame {
+      position: relative; z-index: 1;
+      border-radius: 18px;
+      background: rgba(15, 17, 34, 0.85);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.75), 0 0 50px rgba(168, 85, 247, 0.12);
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+    }
+    .hero-showcase-topbar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px;
+      background: rgba(10, 11, 24, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .window-dot {
+      width: 11px; height: 11px; border-radius: 50%;
+    }
+    .window-dot--red { background: #ef4444; }
+    .window-dot--yellow { background: #f59e0b; }
+    .window-dot--green { background: #10b981; }
+    .window-title {
+      margin-left: 10px;
+      font-size: 0.76rem; font-weight: 600; color: #64748b;
+      letter-spacing: 0.02em;
+    }
+    .hero-showcase-img-wrap {
+      width: 100%;
+      overflow: hidden;
+      background: #06060e;
+      line-height: 0;
+    }
+    .hero-showcase-img {
+      width: 100%; height: auto;
+      display: block; object-fit: cover;
+    }
 
     /* ═══════════════════════════════════════════════════════════
        STATS BAR
        ═══════════════════════════════════════════════════════════ */
     .stats-bar {
       position: relative; z-index: 1;
-      max-width: 900px; margin: -20px auto 80px;
+      max-width: 1040px; margin: -20px auto 80px;
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
-      background: var(--border-card);
+      background: rgba(99,102,241,0.16);
       border-radius: var(--radius);
       overflow: hidden;
-      border: 1px solid var(--border-card);
+      border: 1px solid rgba(99,102,241,0.2);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
     }
     .stat-item {
       background: var(--bg-card);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
       padding: 28px 20px; text-align: center;
     }
     .stat-num {
-      font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;
-      background: linear-gradient(135deg, var(--accent-light), #a78bfa);
+      font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #c084fc, #818cf8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-num.ai-highlight {
+      background: linear-gradient(135deg, #f472b6, #c084fc, #38bdf8);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     .stat-label {
-      margin-top: 6px; font-size: 0.82rem; color: var(--text-muted);
-      font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em;
+      margin-top: 6px; font-size: 0.82rem; color: var(--text-secondary);
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -211,23 +392,238 @@
        ═══════════════════════════════════════════════════════════ */
     section {
       position: relative; z-index: 1;
-      max-width: 1200px; margin: 0 auto;
-      padding: 80px 32px;
+      max-width: 1240px; margin: 0 auto;
+      padding: 85px 32px;
     }
 
     .section-label {
-      display: inline-block; padding: 6px 16px; border-radius: 999px;
-      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15);
-      font-size: 0.78rem; font-weight: 600; color: var(--accent-light);
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 16px; border-radius: 999px;
+      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2);
+      font-size: 0.8rem; font-weight: 600; color: var(--accent-light);
       text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;
     }
+    .section-label.ai {
+      background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(6,182,212,0.12));
+      border: 1px solid rgba(168,85,247,0.4);
+      color: #d8b4fe;
+    }
     .section-title {
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-      font-weight: 800; letter-spacing: -0.02em; margin-bottom: 16px;
+      font-size: clamp(2rem, 3.8vw, 2.9rem);
+      font-weight: 800; letter-spacing: -0.025em; margin-bottom: 16px;
+      line-height: 1.15;
     }
     .section-desc {
-      color: var(--text-secondary); font-size: 1.05rem; max-width: 560px;
-      margin-bottom: 56px;
+      color: var(--text-secondary); font-size: 1.08rem; max-width: 620px;
+      margin-bottom: 52px; line-height: 1.65;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SUPER SPOTLIGHT: THUNDER IA (DESTAQUE ABSOLUTO)
+       ═══════════════════════════════════════════════════════════ */
+    .ai-spotlight-wrapper {
+      position: relative;
+      margin: 40px auto 70px;
+      background: linear-gradient(135deg, rgba(24, 18, 48, 0.85) 0%, rgba(13, 14, 34, 0.95) 50%, rgba(10, 24, 45, 0.85) 100%);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 28px;
+      padding: 56px 48px;
+      box-shadow: 0 25px 90px rgba(168, 85, 247, 0.18), 0 0 0 1px rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    .ai-spotlight-wrapper::before {
+      content: ''; position: absolute;
+      top: -120px; right: -120px; width: 450px; height: 450px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, transparent 70%);
+      pointer-events: none; filter: blur(60px);
+    }
+    .ai-spotlight-wrapper::after {
+      content: ''; position: absolute;
+      bottom: -120px; left: -120px; width: 450px; height: 450px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.22) 0%, transparent 70%);
+      pointer-events: none; filter: blur(60px);
+    }
+
+    .ai-spotlight-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr;
+      gap: 48px;
+      align-items: center;
+      position: relative; z-index: 2;
+    }
+
+    .ai-spotlight-left h2 {
+      font-size: clamp(2.2rem, 3.4vw, 3rem);
+      font-weight: 900; letter-spacing: -0.03em;
+      line-height: 1.12;
+      background: linear-gradient(135deg, #ffffff 40%, #e9d5ff 75%, #38bdf8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+    }
+
+    .ai-spotlight-left p {
+      font-size: 1.06rem; color: #cbd5e1; line-height: 1.7;
+      margin-bottom: 30px;
+    }
+
+    .ai-feature-checklist {
+      list-style: none; display: flex; flex-direction: column; gap: 14px;
+      margin-bottom: 36px;
+    }
+    .ai-feature-checklist li {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 0.96rem; color: #f1f5f9;
+    }
+    .ai-feature-checklist .chk-icon {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(168,85,247,0.22); border: 1px solid rgba(168,85,247,0.5);
+      color: #c084fc; display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: bold; flex-shrink: 0; margin-top: 2px;
+    }
+    .ai-feature-checklist strong {
+      color: #f8fafc; font-weight: 700;
+    }
+
+    /* Mockup da Tela da IA */
+    .ai-screen-mock {
+      background: #090a16;
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.65), 0 0 35px rgba(168,85,247,0.18);
+    }
+    .ai-mock-header {
+      background: #101226;
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ai-mock-header-left {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.85rem; font-weight: 700; color: #f1f5f9;
+    }
+    .ai-pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10b981; box-shadow: 0 0 10px #10b981;
+    }
+    .ai-mock-badge-status {
+      font-size: 0.72rem; padding: 3px 9px; border-radius: 999px;
+      background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.45);
+      color: #fca5a5; font-weight: 700; text-transform: uppercase;
+    }
+
+    .ai-mock-body {
+      padding: 22px;
+      display: flex; flex-direction: column; gap: 16px;
+      font-size: 0.88rem;
+    }
+
+    .ai-mock-cause-box {
+      background: rgba(239,68,68,0.08);
+      border-left: 4px solid #ef4444;
+      padding: 14px 16px; border-radius: 8px;
+    }
+    .ai-mock-cause-title {
+      font-size: 0.76rem; font-weight: 800; text-transform: uppercase;
+      color: #f87171; letter-spacing: 0.05em; margin-bottom: 4px;
+    }
+    .ai-mock-cause-desc {
+      color: #f1f5f9; font-weight: 600; line-height: 1.45;
+    }
+
+    .ai-mock-cmd-card {
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .ai-mock-cmd-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px; font-size: 0.76rem; color: #94a3b8; font-weight: 600;
+    }
+    .ai-mock-code {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617; color: #38bdf8;
+      padding: 10px 14px; border-radius: 6px;
+      font-size: 0.82rem; display: flex; justify-content: space-between;
+      align-items: center; border: 1px solid rgba(56,189,248,0.18);
+    }
+    .ai-mock-btn-exec {
+      background: rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.4);
+      color: #6ee7b7; padding: 4px 10px; border-radius: 6px;
+      font-size: 0.72rem; font-weight: 700; cursor: pointer;
+    }
+
+    .ai-mock-laudo-box {
+      background: rgba(168,85,247,0.08);
+      border: 1px solid rgba(168,85,247,0.25);
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .ai-mock-laudo-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.76rem; font-weight: 700; color: #d8b4fe; text-transform: uppercase;
+    }
+    .ai-mock-laudo-text {
+      font-size: 0.8rem; color: #cbd5e1; line-height: 1.5;
+    }
+    .ai-mock-btn-send {
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      color: #fff; padding: 6px 12px; border-radius: 6px;
+      font-size: 0.72rem; font-weight: 700; border: none; cursor: pointer;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       ORDEM DE SERVIÇO & LAUDOS TÉCNICOS
+       ═══════════════════════════════════════════════════════════ */
+    .so-section-card {
+      background: linear-gradient(135deg, rgba(16, 24, 45, 0.75) 0%, rgba(12, 16, 32, 0.85) 100%);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      border-radius: var(--radius);
+      padding: 44px;
+      margin-bottom: 50px;
+      display: grid; grid-template-columns: 1.1fr 1fr;
+      gap: 40px; align-items: center;
+    }
+    .so-preview-paper {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 12px;
+      padding: 24px;
+      font-size: 0.75rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      transform: rotate(-1deg);
+      border-top: 5px solid #4f46e5;
+    }
+    .so-paper-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 12px;
+    }
+    .so-paper-title { font-weight: 900; font-size: 0.95rem; color: #1e1b4b; }
+    .so-paper-pill {
+      background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.68rem; font-weight: 700;
+    }
+    .so-paper-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      background: #f8fafc; padding: 10px; border-radius: 6px; margin-bottom: 12px;
+    }
+    .so-paper-line strong { color: #0f172a; }
+    .so-paper-list {
+      list-style: none; display: flex; flex-direction: column; gap: 4px;
+      margin-bottom: 12px; font-size: 0.72rem; color: #334155;
+    }
+    .so-paper-list li::before {
+      content: '✔ '; color: #10b981; font-weight: bold;
+    }
+    .so-paper-signatures {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      border-top: 1px dashed #cbd5e1; padding-top: 10px; text-align: center;
+      font-size: 0.68rem; color: #64748b;
+    }
+    .so-paper-sign-line {
+      border-top: 1px solid #94a3b8; margin-top: 20px; padding-top: 4px;
+      font-weight: 600; color: #1e293b;
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -235,144 +631,117 @@
        ═══════════════════════════════════════════════════════════ */
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 22px;
     }
     .feature-card {
       background: var(--bg-card);
       border: 1px solid var(--border-card);
       border-radius: var(--radius);
       padding: 32px 28px;
-      transition: all 0.35s;
-      backdrop-filter: blur(12px);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(14px);
+      position: relative; overflow: hidden;
     }
     .feature-card:hover {
       transform: translateY(-6px);
-      border-color: rgba(99,102,241,0.3);
-      box-shadow: 0 20px 50px rgba(99,102,241,0.1);
+      border-color: rgba(99,102,241,0.38);
+      box-shadow: 0 22px 55px rgba(99,102,241,0.14);
+    }
+    .feature-card.card-ai-badge {
+      border-color: rgba(168,85,247,0.35);
+      background: linear-gradient(135deg, rgba(22, 16, 42, 0.75), rgba(15, 17, 34, 0.72));
+    }
+    .feature-card.card-ai-badge::before {
+      content: 'NOVO & IA';
+      position: absolute; top: 16px; right: 18px;
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      color: #fff; font-size: 0.65rem; font-weight: 800;
+      padding: 3px 8px; border-radius: 999px;
+      letter-spacing: 0.05em;
     }
     .feature-icon {
       width: 52px; height: 52px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.6rem; margin-bottom: 20px;
-      background: rgba(99,102,241,0.1);
+      background: rgba(99,102,241,0.12);
+    }
+    .feature-icon.ai-icon {
+      background: rgba(168,85,247,0.18);
+      box-shadow: 0 0 20px rgba(168,85,247,0.25);
     }
     .feature-card h3 {
-      font-size: 1.1rem; font-weight: 700; margin-bottom: 10px;
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
     }
     .feature-card p {
-      color: var(--text-secondary); font-size: 0.92rem; line-height: 1.65;
+      color: var(--text-secondary); font-size: 0.93rem; line-height: 1.65;
     }
 
     /* ═══════════════════════════════════════════════════════════
-       SCREENSHOT SECTION
+       PREVIEW SECTION
        ═══════════════════════════════════════════════════════════ */
     .screenshot-section {
       text-align: center;
     }
     .screenshot-frame {
-      max-width: 960px; margin: 0 auto;
+      max-width: 1000px; margin: 0 auto;
       border-radius: var(--radius);
-      border: 1px solid var(--border-card);
+      border: 1px solid rgba(99,102,241,0.25);
       overflow: hidden;
       background: var(--bg-card);
       padding: 12px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+      box-shadow: 0 35px 90px rgba(0,0,0,0.6);
     }
     .screenshot-titlebar {
-      display: flex; align-items: center; gap: 8px; padding: 10px 16px;
-      background: rgba(15,15,30,0.8); border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      display: flex; align-items: center; gap: 8px; padding: 11px 18px;
+      background: rgba(15,15,30,0.9); border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     }
-    .screenshot-dot {
-      width: 12px; height: 12px; border-radius: 50%;
-    }
+    .screenshot-dot { width: 12px; height: 12px; border-radius: 50%; }
     .screenshot-dot--red { background: #ef4444; }
     .screenshot-dot--yellow { background: #f59e0b; }
     .screenshot-dot--green { background: #22c55e; }
     .screenshot-titlebar span {
-      margin-left: 12px; font-size: 0.82rem; color: var(--text-muted);
+      margin-left: 12px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;
     }
     .screenshot-body {
-      background: linear-gradient(135deg, #0a0a1a, #12122a);
+      background: linear-gradient(135deg, #090918, #111129);
       border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-      min-height: 420px;
-      display: flex; align-items: center; justify-content: center;
+      min-height: 440px;
+      display: flex; align-items: stretch;
       position: relative; overflow: hidden;
     }
-    .screenshot-body .mock-sidebar {
-      position: absolute; left: 0; top: 0; bottom: 0; width: 200px;
-      background: rgba(10,10,22,0.9);
-      border-right: 1px solid rgba(99,102,241,0.08);
-      padding: 24px 0;
-    }
-    .mock-sidebar-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 20px; font-size: 0.82rem; color: var(--text-muted);
-      transition: all 0.2s;
-    }
-    .mock-sidebar-item.active {
-      color: var(--accent-light);
-      background: rgba(99,102,241,0.08);
-      border-left: 3px solid var(--accent);
-    }
-    .mock-sidebar-item .icon { font-size: 1rem; }
-
-    .screenshot-body .mock-main {
-      margin-left: 200px; padding: 28px; width: 100%;
-    }
-    .mock-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 28px;
-    }
-    .mock-header h2 {
-      font-size: 1.2rem; font-weight: 700;
-      background: linear-gradient(135deg, #f1f5f9, #818cf8);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .mock-live-stats {
-      display: flex; gap: 16px;
-    }
-    .mock-stat {
-      padding: 6px 14px; border-radius: 8px;
-      background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.12);
-      font-size: 0.75rem; color: var(--text-secondary);
-    }
-    .mock-stat strong { color: var(--accent-light); }
-
-    .mock-cards {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
-    }
-    .mock-card {
-      background: rgba(15,15,30,0.7);
-      border: 1px solid rgba(99,102,241,0.1);
-      border-radius: 12px; padding: 20px;
+    .mock-sidebar {
+      width: 210px;
+      background: rgba(10,10,22,0.95);
+      border-right: 1px solid rgba(99,102,241,0.1);
+      padding: 20px 0;
+      flex-shrink: 0;
       text-align: left;
     }
-    .mock-card .mc-icon {
-      font-size: 1.3rem; margin-bottom: 10px;
+    .mock-sidebar-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px; font-size: 0.82rem; color: var(--text-muted);
+      transition: all 0.2s; font-weight: 500;
     }
-    .mock-card h4 {
-      font-size: 0.82rem; font-weight: 600; margin-bottom: 4px;
-      color: var(--text-primary);
+    .mock-sidebar-item.active {
+      color: #d8b4fe;
+      background: rgba(168,85,247,0.12);
+      border-left: 3px solid #a855f7;
+      font-weight: 700;
     }
-    .mock-card p {
-      font-size: 0.72rem; color: var(--text-muted);
-    }
-    .mock-card .mc-btn {
-      display: inline-block; margin-top: 12px;
-      padding: 5px 14px; border-radius: 6px; font-size: 0.7rem;
-      background: rgba(99,102,241,0.15); color: var(--accent-light);
-      font-weight: 600;
+    .mock-main {
+      padding: 24px; width: 100%; text-align: left;
+      display: flex; flex-direction: column; gap: 18px;
     }
 
     /* ═══════════════════════════════════════════════════════════
        CHANGELOG SECTION
        ═══════════════════════════════════════════════════════════ */
-    .changelog-list { max-width: 700px; }
+    .changelog-list { max-width: 820px; margin: 0 auto; }
     .changelog-item {
-      position: relative; padding: 28px 0 28px 32px;
-      border-left: 2px solid rgba(99,102,241,0.15);
+      position: relative; padding: 28px 0 28px 36px;
+      border-left: 2px solid rgba(99,102,241,0.2);
     }
     .changelog-item::before {
       content: '';
@@ -380,85 +749,98 @@
       width: 12px; height: 12px; border-radius: 50%;
       background: var(--accent); border: 3px solid var(--bg-primary);
     }
-    .changelog-item:first-child::before { background: var(--success); }
-    .changelog-ver {
-      font-size: 0.78rem; font-weight: 600; color: var(--accent-light);
-      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px;
+    .changelog-item:first-child::before {
+      background: #a855f7;
+      box-shadow: 0 0 12px #a855f7;
     }
-    .changelog-item:first-child .changelog-ver { color: var(--success); }
-    .changelog-item h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; }
+    .changelog-ver {
+      font-size: 0.8rem; font-weight: 700; color: var(--accent-light);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    .changelog-item:first-child .changelog-ver {
+      color: #d8b4fe;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .changelog-item h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 12px; }
     .changelog-item ul {
-      list-style: none; display: flex; flex-direction: column; gap: 6px;
+      list-style: none; display: flex; flex-direction: column; gap: 8px;
     }
     .changelog-item li {
-      font-size: 0.9rem; color: var(--text-secondary);
-      padding-left: 18px; position: relative;
+      font-size: 0.93rem; color: var(--text-secondary);
+      padding-left: 20px; position: relative; line-height: 1.6;
     }
     .changelog-item li::before {
-      content: '→'; position: absolute; left: 0; color: var(--accent); font-weight: 600;
+      content: '✦'; position: absolute; left: 0; color: #a855f7; font-weight: 600;
+      font-size: 0.8rem;
     }
 
     /* ═══════════════════════════════════════════════════════════
-       REQUIREMENTS
+       REQUISITOS
        ═══════════════════════════════════════════════════════════ */
     .req-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px; max-width: 700px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px; max-width: 900px; margin: 0 auto;
     }
     .req-item {
-      display: flex; align-items: center; gap: 14px;
-      padding: 18px 20px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 22px; border-radius: var(--radius-sm);
       background: var(--bg-card); border: 1px solid var(--border-card);
     }
-    .req-icon { font-size: 1.4rem; }
+    .req-icon { font-size: 1.6rem; }
     .req-item .req-label {
-      font-size: 0.82rem; color: var(--text-muted);
+      font-size: 0.82rem; color: var(--text-muted); font-weight: 500;
     }
     .req-item .req-value {
-      font-size: 0.95rem; font-weight: 600;
+      font-size: 1rem; font-weight: 700; color: #f8fafc;
     }
 
     /* ═══════════════════════════════════════════════════════════
        CTA FINAL
        ═══════════════════════════════════════════════════════════ */
     .cta-section {
-      text-align: center; padding: 100px 32px 120px;
+      text-align: center; padding: 100px 32px 130px;
     }
     .cta-box {
-      max-width: 700px; margin: 0 auto;
-      padding: 64px 48px;
-      background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(124,58,237,0.06));
-      border: 1px solid rgba(99,102,241,0.15);
-      border-radius: 24px;
+      max-width: 820px; margin: 0 auto;
+      padding: 68px 52px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(168,85,247,0.14), rgba(6,182,212,0.08));
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 28px;
       position: relative; overflow: hidden;
-    }
-    .cta-box::before {
-      content: '';
-      position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-      background: radial-gradient(circle, rgba(99,102,241,0.06), transparent 60%);
-      pointer-events: none;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.5);
     }
     .cta-box h2 {
-      font-size: 2rem; font-weight: 800; margin-bottom: 16px;
-      position: relative;
+      font-size: clamp(2rem, 3.5vw, 2.6rem); font-weight: 800; margin-bottom: 16px;
+      letter-spacing: -0.02em;
     }
     .cta-box p {
-      color: var(--text-secondary); margin-bottom: 36px;
-      font-size: 1.05rem; position: relative;
+      color: var(--text-secondary); margin-bottom: 38px;
+      font-size: 1.1rem; max-width: 580px; margin-left: auto; margin-right: auto;
     }
-    .cta-box .btn { position: relative; }
 
     /* ═══════════════════════════════════════════════════════════
        FOOTER
        ═══════════════════════════════════════════════════════════ */
     footer {
       position: relative; z-index: 1;
-      border-top: 1px solid rgba(99,102,241,0.08);
-      padding: 40px 32px;
+      border-top: 1px solid rgba(99,102,241,0.12);
+      padding: 48px 32px;
       text-align: center;
-      color: var(--text-muted); font-size: 0.82rem;
+      background: #030308;
+      color: var(--text-muted); font-size: 0.88rem;
     }
-    footer a { color: var(--accent-light); text-decoration: none; }
+    .footer-content {
+      max-width: 900px; margin: 0 auto;
+      display: flex; flex-direction: column; gap: 14px; align-items: center;
+    }
+    .footer-links {
+      display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;
+    }
+    footer a {
+      color: var(--accent-light); text-decoration: none; font-weight: 600;
+      transition: color 0.2s;
+    }
+    footer a:hover { color: #c084fc; text-decoration: underline; }
 
     /* ═══════════════════════════════════════════════════════════
        ANIMATIONS
@@ -475,8 +857,12 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
+    @keyframes spin-pulse {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.15); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
 
-    /* Scroll reveal */
     .reveal {
       opacity: 0; transform: translateY(30px);
       transition: opacity 0.6s ease-out, transform 0.6s ease-out;
@@ -486,21 +872,57 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       MOBILE RESPONSIVE
+       RESPONSIVE
        ═══════════════════════════════════════════════════════════ */
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
+    @media (max-width: 960px) {
+      .ai-spotlight-grid { grid-template-columns: 1fr; }
+      .so-section-card { grid-template-columns: 1fr; }
       .stats-bar { grid-template-columns: repeat(2, 1fr); }
-      .hero { padding: 120px 20px 60px; }
-      .hero-actions { flex-direction: column; align-items: center; }
+    }
+    @media (max-width: 768px) {
+      .nav-mobile-toggle { display: block; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%; left: 0; width: 100%;
+        background: rgba(7, 7, 18, 0.98);
+        backdrop-filter: blur(24px);
+        border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        flex-direction: column;
+        padding: 20px 24px;
+        gap: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+      }
+      .nav-links.nav-open { display: flex; }
+      .nav-cta { display: none; }
+      .hero { padding: 95px 18px 45px; }
+      .hero-actions, .cta-actions { flex-direction: column; align-items: stretch; width: 100%; max-width: 340px; margin-left: auto; margin-right: auto; }
+      .btn { justify-content: center; width: 100%; text-align: center; }
+      .hero-differentials {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        max-width: 440px;
+        margin-top: 28px;
+      }
+      .diff-item { font-size: 0.78rem; white-space: normal; text-align: left; }
       .mock-sidebar { display: none !important; }
-      .screenshot-body .mock-main { margin-left: 0; }
-      .mock-cards { grid-template-columns: 1fr 1fr; }
+      .ai-spotlight-wrapper { padding: 32px 24px; }
+      .cta-box { padding: 48px 24px; }
       section { padding: 60px 20px; }
     }
     @media (max-width: 480px) {
-      .stats-bar { grid-template-columns: 1fr 1fr; }
-      .mock-cards { grid-template-columns: 1fr; }
+      .stats-bar { grid-template-columns: 1fr; }
+      .so-preview-paper { padding: 16px; }
+      .hero-differentials { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
 </head>
@@ -510,53 +932,105 @@
   <div class="bg-grid"></div>
   <div class="bg-glow bg-glow--1"></div>
   <div class="bg-glow bg-glow--2"></div>
+  <div class="bg-glow bg-glow--ai"></div>
 
   <!-- ═══════════ NAV ═══════════ -->
   <nav>
     <div class="nav-inner">
-      <a href="#" class="nav-brand">
-        <img src="assets/logo.png" alt="ThunderTools">
-        <span>ThunderTools</span>
+      <a href="#" class="nav-brand" aria-label="ThunderTools">
+        <img src="assets/logo.png" alt="ThunderTools Logo">
       </a>
-      <ul class="nav-links">
+      <ul class="nav-links" id="nav-menu-links">
+        <li><a href="#thunder-ia" class="nav-ai-link">✨ Thunder IA</a></li>
+        <li><a href="#laudos">Laudos &amp; O.S.</a></li>
         <li><a href="#features">Recursos</a></li>
-        <li><a href="#preview">Preview</a></li>
-        <li><a href="#changelog">Changelog</a></li>
+        <li><a href="#preview">Interface</a></li>
+        <li><a href="#changelog">Novidades</a></li>
         <li><a href="#requisitos">Requisitos</a></li>
       </ul>
-      <a href="#download" class="nav-cta">
-        ⬇ Download
+      <a href="../dist/ThunderTools Setup 1.1.1.exe" class="nav-cta">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Download Grátis</span>
       </a>
+      <button type="button" class="nav-mobile-toggle" id="btn-mobile-nav" aria-label="Abrir menu de navegação">
+        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
     </div>
   </nav>
 
   <!-- ═══════════ HERO ═══════════ -->
   <section class="hero">
     <div class="hero-content">
-      <div class="hero-badge">
-        <span class="dot"></span>
-        Versão 1.1.1 — Disponível agora
+      <!-- Selo Superior -->
+      <div class="hero-badge-pill">
+        <svg class="hero-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        <span>NOVA GERAÇÃO 2.0 • THUNDER IA INTEGRADA</span>
       </div>
-      <h1>Manutenção Windows sem complicação</h1>
-      <p>
-        Suite completa de ferramentas de diagnóstico, limpeza e otimização.
-        Tudo em uma interface moderna, com mais de 43 ferramentas poderosas.
+
+      <!-- Título Principal -->
+      <h1 class="hero-title">
+        Seu computador sob controle.<br>
+        <span class="hero-gradient-text">Diagnóstico inteligente</span> e <span class="hero-gradient-text">manutenção profissional</span>.
+      </h1>
+
+      <!-- Descrição -->
+      <p class="hero-desc">
+        Mais de 60 ferramentas para diagnóstico, manutenção e otimização do Windows. Identifique problemas, monitore o hardware e gere laudos técnicos profissionais com o auxílio da Thunder IA.
       </p>
+
+      <!-- Botões de Ação (CTA) -->
       <div class="hero-actions">
-        <a href="../dist/ThunderTools Setup 1.1.1.exe" class="btn btn-primary" id="btn-installer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Instalador (.exe)
+        <a href="../dist/ThunderTools Setup 1.1.1.exe" class="btn btn-hero-primary" id="btn-hero-download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Baixar gratuitamente</span>
         </a>
-        <a href="../dist/ThunderTools 1.1.1.exe" class="btn btn-secondary" id="btn-portable">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          Versão Portátil
+        <a href="#features" class="btn btn-hero-secondary" id="btn-hero-features">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-svg"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Conhecer funcionalidades</span>
         </a>
       </div>
-      <div class="hero-meta">
-        <span>🪟 Windows 10/11</span>
-        <span>📦 ~73 MB</span>
-        <span>🔓 Gratuito</span>
-        <span>⚡ v1.1.1</span>
+
+      <!-- Indicadores de Diferenciais -->
+      <div class="hero-differentials">
+        <div class="diff-item">
+          <div class="diff-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <span>60+ ferramentas de diagnóstico</span>
+        </div>
+
+        <div class="diff-item">
+          <div class="diff-icon diff-icon--purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <span>Thunder IA integrada</span>
+        </div>
+
+        <div class="diff-item">
+          <div class="diff-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <span>Laudos técnicos em PDF</span>
+        </div>
+
+        <div class="diff-item">
+          <div class="diff-icon diff-icon--cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+          </div>
+          <span>Análise de integridade do hardware</span>
+        </div>
+      </div>
+
+      <!-- Apresentação Visual do Software (Showcase Real) -->
+      <div class="hero-showcase">
+        <div class="hero-showcase-glow"></div>
+        <div class="hero-showcase-frame">
+          <div class="hero-showcase-img-wrap">
+            <img src="assets/dashboard-preview.png" alt="Interface Principal do ThunderTools 2.0" class="hero-showcase-img" loading="eager" width="1024" height="540">
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -564,86 +1038,295 @@
   <!-- ═══════════ STATS BAR ═══════════ -->
   <div class="stats-bar reveal">
     <div class="stat-item">
-      <div class="stat-num">43+</div>
-      <div class="stat-label">Ferramentas</div>
+      <div class="stat-num">60+</div>
+      <div class="stat-label">Ferramentas &amp; Utilitários</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num">8</div>
-      <div class="stat-label">Categorias</div>
+      <div class="stat-num ai-highlight">Thunder IA</div>
+      <div class="stat-label">Diagnóstico Neural</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num">40+</div>
-      <div class="stat-label">Parsers</div>
+      <div class="stat-num">PDF / HTML</div>
+      <div class="stat-label">Laudos Técnicos Oficiais</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num">2</div>
-      <div class="stat-label">Temas</div>
+      <div class="stat-num">1-Clique</div>
+      <div class="stat-label">Smart Care Guiado</div>
     </div>
   </div>
 
-  <!-- ═══════════ FEATURES ═══════════ -->
-  <section id="features">
-    <div class="section-label">Recursos</div>
-    <h2 class="section-title">Tudo que você precisa, num só lugar</h2>
-    <p class="section-desc">
-      Diagnóstico completo, limpeza inteligente e otimização de performance — com uma interface premium.
-    </p>
+  <!-- ═══════════ SUPER SPOTLIGHT: THUNDER IA ═══════════ -->
+  <section id="thunder-ia" style="padding-top:20px; padding-bottom:60px;">
+    <div class="ai-spotlight-wrapper reveal">
+      <div class="ai-spotlight-grid">
+        <div class="ai-spotlight-left">
+          <div class="section-label ai">
+            <span>✨</span> Destaque Exclusivo
+          </div>
+          <h2>Thunder IA: O Cérebro Neural do Diagnóstico Windows</h2>
+          <p>
+            Chega de perder horas decifrando logs gigantescos, códigos crípticos do Visualizador de Eventos ou telas azuis (BSOD).
+            A <strong>Thunder IA</strong> analisa a saúde do sistema, correlaciona eventos críticos, identifica a causa raiz exata e gera na hora um plano de ação automatizado com comandos executáveis.
+          </p>
 
-    <div class="features-grid">
-      <div class="feature-card reveal">
-        <div class="feature-icon">🖨️</div>
-        <h3>Impressão</h3>
-        <p>Gerenciamento completo do spooler de impressão, fila de impressão e diagnóstico de problemas.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">🔄</div>
-        <h3>Windows Update</h3>
-        <p>Verificar, instalar e gerenciar atualizações do Windows. Reset de componentes do WU.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">📊</div>
-        <h3>Desempenho</h3>
-        <p>Monitoramento em tempo real de CPU, RAM, processos e otimização de performance do sistema.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">💾</div>
-        <h3>Disco</h3>
-        <p>Análise de espaço, desfragmentação e otimização de SSD com TRIM.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">🌐</div>
-        <h3>Rede</h3>
-        <p>Diagnóstico de rede, DNS rápido (Google/Cloudflare), reset TCP/IP e monitoramento de conexões.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">🔒</div>
-        <h3>Segurança</h3>
-        <p>Scan Windows Defender, status do Firewall, portas abertas e verificação de conexões ativas.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">⚙️</div>
-        <h3>Avançado</h3>
-        <p>Limpeza de temp/prefetch, WinSxS, ponto de restauração, startup manager e mais.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">📦</div>
-        <h3>Programas</h3>
-        <p>Instalação automatizada via Winget: Chrome, WinRAR, 7-Zip, VLC, VS Code, Discord e Spotify.</p>
-      </div>
-      <div class="feature-card reveal">
-        <div class="feature-icon">⭐</div>
-        <h3>Favoritos & Histórico</h3>
-        <p>Marque suas ferramentas mais usadas e acompanhe todo o histórico de comandos executados.</p>
+          <ul class="ai-feature-checklist">
+            <li>
+              <span class="chk-icon">✓</span>
+              <div><strong>Chave Oficial Integrada:</strong> Pronta para usar imediatamente. Todos os usuários têm acesso à IA sem precisar cadastrar chave própria nem pagar nada.</div>
+            </li>
+            <li>
+              <span class="chk-icon">✓</span>
+              <div><strong>Decodificação Inteligente de BSOD:</strong> Análise instantânea de BugChecks, Event ID 41 e falhas de hardware com severidade classificada (Crítico, Alerta ou Moderado).</div>
+            </li>
+            <li>
+              <span class="chk-icon">✓</span>
+              <div><strong>Scripts de Reparo Executáveis com 1 Clique:</strong> Gere comandos corretivos sob medida (DISM, SFC, CHKDSK, resets de rede) e execute diretamente pelo ThunderTools.</div>
+            </li>
+            <li>
+              <span class="chk-icon">✓</span>
+              <div><strong>Síntese Pronta para Laudo do Cliente:</strong> A IA formula automaticamente o parecer técnico profissional pronto para ser inserido na sua Ordem de Serviço.</div>
+            </li>
+          </ul>
+
+          <div style="display:flex; gap:14px; flex-wrap:wrap;">
+            <a href="#download" class="btn btn-ai" style="padding:13px 28px; font-size:0.92rem;">
+              <span>⚡</span> Experimentar a Thunder IA Agora
+            </a>
+          </div>
+        </div>
+
+        <!-- Mockup Visual da Thunder IA -->
+        <div class="ai-screen-mock">
+          <div class="ai-mock-header">
+            <div class="ai-mock-header-left">
+              <span class="ai-pulse-dot"></span>
+              <span>Thunder IA • Diagnóstico Neural Ativo</span>
+            </div>
+            <span class="ai-mock-badge-status">⚠️ Alerta Crítico</span>
+          </div>
+
+          <div class="ai-mock-body">
+            <!-- Causa Raiz -->
+            <div class="ai-mock-cause-box">
+              <div class="ai-mock-cause-title">Causa Raiz Identificada</div>
+              <div class="ai-mock-cause-desc">
+                Inconsistência no subsistema de rede e corrupção no repositório de componentes CBS (WinSxS) após desligamento anormal.
+              </div>
+            </div>
+
+            <!-- Comandos de Reparo -->
+            <div class="ai-mock-cmd-card">
+              <div class="ai-mock-cmd-head">
+                <span>COMANDO DE CORREÇÃO #1</span>
+                <span>DISM REPAIR</span>
+              </div>
+              <div class="ai-mock-code">
+                <code>dism /online /cleanup-image /restorehealth</code>
+                <span class="ai-mock-btn-exec">▶ Executar</span>
+              </div>
+            </div>
+
+            <div class="ai-mock-cmd-card">
+              <div class="ai-mock-cmd-head">
+                <span>COMANDO DE CORREÇÃO #2</span>
+                <span>SYSTEM FILE CHECK</span>
+              </div>
+              <div class="ai-mock-code">
+                <code>sfc /scannow</code>
+                <span class="ai-mock-btn-exec">▶ Executar</span>
+              </div>
+            </div>
+
+            <!-- Síntese para Laudo -->
+            <div class="ai-mock-laudo-box">
+              <div class="ai-mock-laudo-head">
+                <span>Síntese Formatada para Ordem de Serviço</span>
+                <button type="button" class="ai-mock-btn-send">Inserir no Laudo</button>
+              </div>
+              <div class="ai-mock-laudo-text">
+                "Subsistema auditado via Thunder IA. Corrupção de pacotes isolada e reparada com êxito. Estabilidade operacional e integridade de arquivos restabelecidas."
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════ PREVIEW ═══════════ -->
+  <!-- ═══════════ ORDENS DE SERVIÇO & LAUDOS TÉCNICOS ═══════════ -->
+  <section id="laudos">
+    <div class="section-label">Para Técnicos &amp; Assistências</div>
+    <h2 class="section-title">Emissão de Laudos Técnicos &amp; Ordens de Serviço (PDF/HTML)</h2>
+    <p class="section-desc">
+      Entregue valor real aos seus clientes. Gere documentos técnicos profissionais com inventário completo de hardware, histórico de ações e espaço em disco recuperado.
+    </p>
+
+    <div class="so-section-card reveal">
+      <div>
+        <h3 style="font-size:1.6rem; font-weight:800; margin-bottom:16px; color:#f8fafc;">
+          Laudo Certificado pronto para impressão ou envio por WhatsApp
+        </h3>
+        <p style="color:#cbd5e1; font-size:1.02rem; line-height:1.7; margin-bottom:24px;">
+          Cada teste executado no ThunderTools pode ser registrado na sessão e impresso com design cristalino. O documento traz especificações completas de Processador, Placa-Mãe, Memória RAM, Armazenamento, BIOS e Placa de Vídeo.
+        </p>
+
+        <ul class="ai-feature-checklist" style="margin-bottom:28px;">
+          <li>
+            <span class="chk-icon">✓</span>
+            <div><strong>Isolamento de Sessão Limpa:</strong> Opções para zerar os testes e gerar um novo laudo sem interferência de clientes anteriores.</div>
+          </li>
+          <li>
+            <span class="chk-icon">✓</span>
+            <div><strong>Resumo Antes vs. Depois:</strong> Mostra exatamente quantos gigabytes foram liberados e quais subsistemas foram saneados.</div>
+          </li>
+          <li>
+            <span class="chk-icon">✓</span>
+            <div><strong>Campos Customizáveis:</strong> Preencha Nome do Cliente, Técnico Responsável e parecer técnico livremente ou exporte em branco.</div>
+          </li>
+        </ul>
+
+        <a href="#download" class="btn btn-secondary">
+          Baixar e Testar Laudos Técnicos
+        </a>
+      </div>
+
+      <!-- Preview do Papel de Laudo -->
+      <div class="so-preview-paper">
+        <div class="so-paper-header">
+          <div>
+            <div class="so-paper-title">LAUDO TÉCNICO OFICIAL</div>
+            <div style="font-size:0.68rem; color:#64748b;">ThunderTools Enterprise • Thunder</div>
+          </div>
+          <span class="so-paper-pill">STATUS: CONCLUÍDO</span>
+        </div>
+
+        <div class="so-paper-grid">
+          <div class="so-paper-line"><strong>Processador:</strong> Intel Core i7 / AMD Ryzen</div>
+          <div class="so-paper-line"><strong>Memória:</strong> 16 GB DDR4 (Slots Ocupados: 2/4)</div>
+          <div class="so-paper-line"><strong>Armazenamento:</strong> SSD NVMe 512GB (Saúde 98%)</div>
+          <div class="so-paper-line"><strong>Espaço Recuperado:</strong> 6.4 GB de Temporários</div>
+        </div>
+
+        <div style="font-weight:700; color:#1e1b4b; font-size:0.75rem; margin-bottom:6px;">Procedimentos Executados:</div>
+        <ul class="so-paper-list">
+          <li>Auditoria de Integridade Estrutural (SFC / DISM) — 100% Válido</li>
+          <li>Otimização de Armazenamento SSD (TRIM + Limpeza de Cache)</li>
+          <li>Diagnóstico Neural de Logs via Thunder IA</li>
+        </ul>
+
+        <div class="so-paper-signatures">
+          <div>
+            <div class="so-paper-sign-line">Técnico Responsável</div>
+          </div>
+          <div>
+            <div class="so-paper-sign-line">Assinatura do Cliente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ RECURSOS COMPLETOS ═══════════ -->
+  <section id="features">
+    <div class="section-label">Suíte Completa</div>
+    <h2 class="section-title">Mais de 60 Ferramentas Integradas para o Windows</h2>
+    <p class="section-desc">
+      Tudo o que você precisa para manter computadores operando com máxima velocidade, estabilidade e segurança.
+    </p>
+
+    <div class="features-grid">
+      <!-- 1. Thunder IA -->
+      <div class="feature-card card-ai-badge reveal">
+        <div class="feature-icon ai-icon">✨</div>
+        <h3>Thunder IA Neural</h3>
+        <p>Varredura automática de logs do sistema, códigos de erro BSOD, diagnóstico de causa raiz e geração instantânea de comandos de correção.</p>
+      </div>
+
+      <!-- 2. Smart Care -->
+      <div class="feature-card card-ai-badge reveal">
+        <div class="feature-icon">⚡</div>
+        <h3>Smart Care 1-Clique</h3>
+        <p>Checklist guiado de alta velocidade: Limpeza Temp, Flush DNS, Fila de Impressão, TRIM e SFC executados em fila com relatório antes vs. depois.</p>
+      </div>
+
+      <!-- 3. Laudos & O.S. -->
+      <div class="feature-card card-ai-badge reveal">
+        <div class="feature-icon">📄</div>
+        <h3>Laudos em PDF / HTML</h3>
+        <p>Gere ordens de serviço detalhadas para clientes e assistências técnicas, com inventário de hardware, espaço liberado e assinaturas.</p>
+      </div>
+
+      <!-- 4. Backup de Drivers -->
+      <div class="feature-card card-ai-badge reveal">
+        <div class="feature-icon">💾</div>
+        <h3>Backup Total de Drivers</h3>
+        <p>Exporte todos os drivers de terceiros instalados (DISM / PnPUtil) para uma pasta segura antes de formatar a máquina do cliente.</p>
+      </div>
+
+      <!-- 5. Diagnóstico de RAM -->
+      <div class="feature-card card-ai-badge reveal">
+        <div class="feature-icon">🧠</div>
+        <h3>Topologia Física de RAM</h3>
+        <p>Mapeamento detalhado de pentes físicos, barramento (MHz), slots livres, tecnologia (DDR4/DDR5) e limpador de Standby List em cache.</p>
+      </div>
+
+      <!-- 6. Disco & S.M.A.R.T. -->
+      <div class="feature-card reveal">
+        <div class="feature-icon">💽</div>
+        <h3>Saúde S.M.A.R.T. &amp; SSD</h3>
+        <p>Percentual de saúde do SSD/NVMe, temperatura, horas de uso e Radar de Arquivos Gigantes para liberar gigabytes de espaço.</p>
+      </div>
+
+      <!-- 7. Rede, DNS & Speedtest -->
+      <div class="feature-card reveal">
+        <div class="feature-icon">🌐</div>
+        <h3>Rede, DNS &amp; Speedtest</h3>
+        <p>Teste de velocidade de conexão integrado (ping, jitter, download e upload), benchmark de DNS rápido e visualizador de senhas Wi-Fi salvas.</p>
+      </div>
+
+      <!-- 8. Windows Update Pro -->
+      <div class="feature-card reveal">
+        <div class="feature-icon">🔄</div>
+        <h3>Windows Update Pro</h3>
+        <p>Pause atualizações por até 365 dias, desinstale KBs problemáticos com 1 clique e bloqueie a substituição de drivers de vídeo/áudio.</p>
+      </div>
+
+      <!-- 9. Impressão sem Travamentos -->
+      <div class="feature-card reveal">
+        <div class="feature-icon">🖨️</div>
+        <h3>Impressão sem Falhas</h3>
+        <p>Correção automática dos famosos erros de rede 0x0000011b, 0x00000709 e backup completo de impressoras (PrintBRM) para pós-formatação.</p>
+      </div>
+
+      <!-- 10. Desempenho Máximo -->
+      <div class="feature-card reveal">
+        <div class="feature-icon">🚀</div>
+        <h3>Desempenho Extremo</h3>
+        <p>Desbloqueie o plano oculto "Ultimate Performance", otimize efeitos visuais para PCs lentos e encerre processos pesados em tempo real.</p>
+      </div>
+
+      <!-- 11. Segurança & Debloat -->
+      <div class="feature-card reveal">
+        <div class="feature-icon">🛡️</div>
+        <h3>Segurança &amp; Debloat</h3>
+        <p>Remoção segura de telemetria e anúncios do Windows, auditoria de portas por executável, restauração do arquivo HOSTS e scan Defender.</p>
+      </div>
+
+      <!-- 12. Softwares & Runtimes -->
+      <div class="feature-card reveal">
+        <div class="feature-icon">📦</div>
+        <h3>Kits de Softwares Winget</h3>
+        <p>Instalação automatizada pós-formatação de Runtimes Visual C++ All-in-One, .NET, DirectX, navegadores e programas essenciais em lote.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ PREVIEW DA INTERFACE ═══════════ -->
   <section id="preview" class="screenshot-section">
-    <div class="section-label">Preview</div>
-    <h2 class="section-title">Interface Premium</h2>
+    <div class="section-label">Interface Premium</div>
+    <h2 class="section-title">Design Moderno em Dark Mode Nativo</h2>
     <p class="section-desc" style="margin-left:auto;margin-right:auto;">
-      Design moderno com gradientes, glassmorphism e microanimações.
+      Projetado para técnicos e entusiastas: telemetria fluida, busca global instantânea (<kbd>Ctrl + K</kbd>) e comandos com feedback em tempo real.
     </p>
 
     <div class="screenshot-frame reveal">
@@ -651,69 +1334,60 @@
         <div class="screenshot-dot screenshot-dot--red"></div>
         <div class="screenshot-dot screenshot-dot--yellow"></div>
         <div class="screenshot-dot screenshot-dot--green"></div>
-        <span>ThunderTools v1.1.1</span>
+        <span>ThunderTools v2.0 • Thunder IA Neural</span>
       </div>
       <div class="screenshot-body">
         <!-- Mock Sidebar -->
         <div class="mock-sidebar">
-          <div class="mock-sidebar-item"><span class="icon">🖨️</span> Impressão</div>
-          <div class="mock-sidebar-item"><span class="icon">🔄</span> Windows Update</div>
-          <div class="mock-sidebar-item active"><span class="icon">📊</span> Desempenho</div>
-          <div class="mock-sidebar-item"><span class="icon">💾</span> Disco</div>
-          <div class="mock-sidebar-item"><span class="icon">🌐</span> Rede</div>
-          <div class="mock-sidebar-item"><span class="icon">🖥️</span> Sistema</div>
-          <div class="mock-sidebar-item"><span class="icon">🔒</span> Segurança</div>
-          <div class="mock-sidebar-item"><span class="icon">⚙️</span> Avançado</div>
-          <div class="mock-sidebar-item"><span class="icon">📦</span> Programas</div>
-          <div class="mock-sidebar-item"><span class="icon">📜</span> Histórico</div>
-          <div class="mock-sidebar-item"><span class="icon">⭐</span> Favoritos</div>
+          <div class="mock-sidebar-item active"><span style="color:#c084fc;">✨</span> Thunder IA</div>
+          <div class="mock-sidebar-item"><span style="color:#60a5fa;">📄</span> Laudos &amp; OS</div>
+          <div class="mock-sidebar-item"><span>⚡</span> Smart Care</div>
+          <div class="mock-sidebar-item"><span>📊</span> Desempenho</div>
+          <div class="mock-sidebar-item"><span>💾</span> Disco &amp; SSD</div>
+          <div class="mock-sidebar-item"><span>🌐</span> Rede &amp; Wi-Fi</div>
+          <div class="mock-sidebar-item"><span>🖨️</span> Impressão</div>
+          <div class="mock-sidebar-item"><span>🔄</span> Windows Update</div>
+          <div class="mock-sidebar-item"><span>🔒</span> Segurança</div>
+          <div class="mock-sidebar-item"><span>📦</span> Programas</div>
+          <div class="mock-sidebar-item"><span>📜</span> Histórico</div>
         </div>
+
         <!-- Mock Main Area -->
         <div class="mock-main">
-          <div class="mock-header">
-            <h2>📊 Desempenho</h2>
-            <div class="mock-live-stats">
-              <div class="mock-stat">CPU <strong>23%</strong></div>
-              <div class="mock-stat">RAM <strong>6.2 GB</strong></div>
-              <div class="mock-stat">🕐 14:18</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
+            <div>
+              <h3 style="font-size:1.15rem; font-weight:800; color:#f8fafc; display:flex; align-items:center; gap:8px;">
+                <span style="color:#c084fc;">✨</span> Thunder IA • Diagnóstico Especializado
+              </h3>
+              <div style="font-size:0.75rem; color:#94a3b8;">Motor neural ativo com chave de sistema integrada oficial</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <span style="background:rgba(16,185,129,0.18); color:#6ee7b7; border:1px solid rgba(16,185,129,0.35); padding:4px 10px; border-radius:999px; font-size:0.72rem; font-weight:600;">Internet Online</span>
+              <span style="background:rgba(168,85,247,0.18); color:#d8b4fe; border:1px solid rgba(168,85,247,0.35); padding:4px 10px; border-radius:999px; font-size:0.72rem; font-weight:600;">Chave Integrada Ativa</span>
             </div>
           </div>
-          <div class="mock-cards">
-            <div class="mock-card">
-              <div class="mc-icon">⚡</div>
-              <h4>Processos Ativos</h4>
-              <p>Ver todos os processos em execução</p>
-              <span class="mc-btn">▶ Executar</span>
+
+          <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:16px;">
+            <div style="font-size:0.75rem; color:#fca5a5; font-weight:700; text-transform:uppercase; margin-bottom:4px;">STATUS GERAL: ALERTA TÉCNICO DETECTADO</div>
+            <div style="font-size:0.92rem; color:#fff; font-weight:700; margin-bottom:6px;">Falha no Repositório de Pacotes do Windows Update (CBS / DISM)</div>
+            <div style="font-size:0.8rem; color:#cbd5e1;">A Thunder IA identificou arquivos corrompidos gerando código de erro 0x800f081f e lentidão em atualizações.</div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:12px;">
+              <div style="font-size:0.72rem; color:#94a3b8; font-weight:700; margin-bottom:4px;">PLANO DE AÇÃO SUGERIDO</div>
+              <div style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; color:#38bdf8; background:#020617; padding:6px 10px; border-radius:6px; margin-bottom:6px;">
+                dism /online /cleanup-image /restorehealth
+              </div>
+              <div style="font-size:0.7rem; color:#34d399; font-weight:600;">✔ Pronto para execução direta com 1 clique</div>
             </div>
-            <div class="mock-card">
-              <div class="mc-icon">🧠</div>
-              <h4>Uso de Memória</h4>
-              <p>Detalhes do consumo de RAM</p>
-              <span class="mc-btn">▶ Executar</span>
-            </div>
-            <div class="mock-card">
-              <div class="mc-icon">🔥</div>
-              <h4>Otimizar RAM</h4>
-              <p>Liberar memória não utilizada</p>
-              <span class="mc-btn">▶ Executar</span>
-            </div>
-            <div class="mock-card">
-              <div class="mc-icon">📈</div>
-              <h4>Monitor de CPU</h4>
-              <p>Detalhes de cada núcleo</p>
-              <span class="mc-btn">▶ Executar</span>
-            </div>
-            <div class="mock-card">
-              <div class="mc-icon">🌡️</div>
-              <h4>Temperatura</h4>
-              <p>Monitorar temperaturas</p>
-              <span class="mc-btn">▶ Executar</span>
-            </div>
-            <div class="mock-card">
-              <div class="mc-icon">🔋</div>
-              <h4>Plano de Energia</h4>
-              <p>Alto desempenho</p>
-              <span class="mc-btn">▶ Executar</span>
+
+            <div style="background:rgba(15,23,42,0.7); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:12px;">
+              <div style="font-size:0.72rem; color:#94a3b8; font-weight:700; margin-bottom:4px;">SÍNTESE PARA A ORDEM DE SERVIÇO</div>
+              <div style="font-size:0.75rem; color:#cbd5e1; line-height:1.45; margin-bottom:6px;">
+                "Auditoria estrutural concluída. Pacotes do Windows reparados e estabilidade restaurada."
+              </div>
+              <div style="font-size:0.7rem; color:#c084fc; font-weight:600;">📄 Vinculado ao Laudo do Cliente</div>
             </div>
           </div>
         </div>
@@ -723,40 +1397,41 @@
 
   <!-- ═══════════ CHANGELOG ═══════════ -->
   <section id="changelog">
-    <div class="section-label">Changelog</div>
-    <h2 class="section-title">Novidades</h2>
-    <p class="section-desc">Acompanhe a evolução do ThunderTools.</p>
+    <div class="section-label">Evolução Contínua</div>
+    <h2 class="section-title">Changelog &amp; Notas de Versão</h2>
+    <p class="section-desc">Acompanhe as melhorias e novidades implementadas no ThunderTools.</p>
 
     <div class="changelog-list">
       <div class="changelog-item reveal">
-        <div class="changelog-ver">v1.2.0 — Mais Recente</div>
-        <h3>Gestão de Programas</h3>
+        <div class="changelog-ver">v2.0.0 — Geração Thunder IA &amp; Laudos Pro (Mais Recente)</div>
+        <h3>Lançamento Oficial da Thunder IA &amp; Ordens de Serviço</h3>
         <ul>
-          <li>Nova aba "Programas" com instalação automatizada via Winget</li>
-          <li>Softwares comuns: Chrome, WinRAR, 7-Zip, VLC, VS Code, Discord, Spotify</li>
-          <li>Sistema de feedback visual para progresso de instalação</li>
+          <li><strong>Motor Thunder IA Integrado:</strong> Inteligência artificial para análise de logs, BSOD e causa raiz sem exigir chave própria do usuário.</li>
+          <li><strong>Gerador de Laudos &amp; O.S.:</strong> Exportação profissional em PDF e HTML com inventário de hardware e assinaturas.</li>
+          <li><strong>Isolamento de Sessão:</strong> Novos botões para zerar testes e iniciar novos atendimentos sem interferência de dados antigos.</li>
+          <li><strong>Backup Total de Drivers:</strong> Exportação de drivers de terceiros via DISM e PnPUtil para pré-formatação.</li>
+          <li><strong>Diagnóstico de Memória RAM:</strong> Mapa físico de slots, velocidade em MHz, tecnologia e liberador de Standby List.</li>
+          <li><strong>Speedtest &amp; Benchmark DNS:</strong> Medição de ping, jitter, download/upload e aplicação de DNS otimizado.</li>
+          <li><strong>Busca Global Instantânea (Ctrl + K):</strong> Filtre qualquer uma das mais de 60 ferramentas em milissegundos.</li>
         </ul>
       </div>
+
+      <div class="changelog-item reveal">
+        <div class="changelog-ver">v1.2.0</div>
+        <h3>Gestão de Programas &amp; Winget</h3>
+        <ul>
+          <li>Aba Programas com instalação automatizada de navegadores, utilitários e softwares comuns.</li>
+          <li>Feedback visual de progresso e cancelamento seguro de tarefas.</li>
+        </ul>
+      </div>
+
       <div class="changelog-item reveal">
         <div class="changelog-ver">v1.1.0</div>
-        <h3>Melhorias de UX e Novas Funcionalidades</h3>
+        <h3>Melhorias de UX &amp; Parsers Inteligentes</h3>
         <ul>
-          <li>Microanimações e indicadores gráficos de CPU/RAM</li>
-          <li>Novas abas: Segurança, Avançado, Histórico e Favoritos</li>
-          <li>Toggle tema escuro/claro</li>
-          <li>Sistema de favoritos e histórico persistente</li>
-          <li>30+ parsers inteligentes para resultados formatados</li>
-          <li>Comandos interativos: Renomear Admin, Renomear PC</li>
-        </ul>
-      </div>
-      <div class="changelog-item reveal">
-        <div class="changelog-ver">v1.0.0</div>
-        <h3>Versão Inicial</h3>
-        <ul>
-          <li>6 abas principais de manutenção</li>
-          <li>30 ferramentas de diagnóstico</li>
-          <li>Live stats (CPU, RAM, Clock)</li>
-          <li>Design premium com gradientes e glows</li>
+          <li>Indicadores visuais de CPU/RAM em tempo real e microanimações fluidas.</li>
+          <li>Abas Segurança, Avançado, Histórico e Favoritos persistentes.</li>
+          <li>Mais de 30 parsers inteligentes para formatação legível de saídas do Windows.</li>
         </ul>
       </div>
     </div>
@@ -764,37 +1439,37 @@
 
   <!-- ═══════════ REQUISITOS ═══════════ -->
   <section id="requisitos">
-    <div class="section-label">Requisitos</div>
+    <div class="section-label">Compatibilidade</div>
     <h2 class="section-title">Requisitos do Sistema</h2>
-    <p class="section-desc">Compatível com a maioria dos PCs modernos.</p>
+    <p class="section-desc">Leve, otimizado e compatível com computadores modernos e corporativos.</p>
 
     <div class="req-grid reveal">
       <div class="req-item">
         <div class="req-icon">🪟</div>
         <div>
           <div class="req-label">Sistema Operacional</div>
-          <div class="req-value">Windows 10 / 11 (x64)</div>
+          <div class="req-value">Windows 10 / 11 (64-bit)</div>
         </div>
       </div>
       <div class="req-item">
         <div class="req-icon">🧠</div>
         <div>
           <div class="req-label">Memória RAM</div>
-          <div class="req-value">4 GB mínimo</div>
+          <div class="req-value">4 GB recomendado</div>
         </div>
       </div>
       <div class="req-item">
         <div class="req-icon">💾</div>
         <div>
           <div class="req-label">Espaço em Disco</div>
-          <div class="req-value">~200 MB</div>
+          <div class="req-value">~200 MB livres</div>
         </div>
       </div>
       <div class="req-item">
         <div class="req-icon">🔑</div>
         <div>
-          <div class="req-label">Permissões</div>
-          <div class="req-value">Administrador</div>
+          <div class="req-label">Permissões de Execução</div>
+          <div class="req-value">Administrador do Windows</div>
         </div>
       </div>
     </div>
@@ -803,16 +1478,19 @@
   <!-- ═══════════ CTA FINAL ═══════════ -->
   <section class="cta-section" id="download">
     <div class="cta-box reveal">
-      <h2>Pronto para turbinar seu Windows?</h2>
-      <p>Baixe o ThunderTools gratuitamente e tenha acesso a todas as ferramentas de manutenção.</p>
-      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-        <a href="../dist/ThunderTools Setup 1.1.1.exe" class="btn btn-primary">
+      <div class="section-label ai" style="margin-bottom:14px;">Download Gratuito</div>
+      <h2>Pronto para elevar o nível das suas manutenções?</h2>
+      <p>
+        Baixe o <strong>ThunderTools</strong> agora mesmo e tenha em mãos a potência da <strong>Thunder IA</strong>, geração de laudos em PDF e mais de 60 ferramentas especializadas.
+      </p>
+      <div class="cta-actions" style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+        <a href="../dist/ThunderTools Setup 1.1.1.exe" class="btn btn-ai" style="padding:16px 36px; font-size:1.02rem;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Instalador
+          Download Instalador Oficial (.exe)
         </a>
-        <a href="../dist/ThunderTools 1.1.1.exe" class="btn btn-secondary">
+        <a href="../dist/ThunderTools 1.1.1.exe" class="btn btn-secondary" style="padding:16px 32px; font-size:1.02rem;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-          Versão Portátil
+          Versão Portátil (.exe)
         </a>
       </div>
     </div>
@@ -820,7 +1498,18 @@
 
   <!-- ═══════════ FOOTER ═══════════ -->
   <footer>
-    <p>© 2026 ThunderTools — Ferramentas de Diagnóstico Windows. Feito com ⚡ por <a href="#">ThunderTools Team</a>.</p>
+    <div class="footer-content">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img src="assets/logo.png" alt="ThunderTools" style="height:28px;">
+        <strong style="color:#f8fafc; font-size:1rem;">ThunderTools</strong>
+      </div>
+      <p>© 2026 ThunderTools. Desenvolvido e mantido com excelência técnica por <strong>Thunder</strong>.</p>
+      <div class="footer-links">
+        <span>ThunderTools Enterprise v2.0</span>
+        <span>•</span>
+        <span>Thunder IA Neural</span>
+      </div>
+    </div>
   </footer>
 
   <!-- ═══════════ SCROLL REVEAL ═══════════ -->
@@ -831,19 +1520,35 @@
           entry.target.classList.add('visible');
         }
       });
-    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
 
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-    // Smooth nav background on scroll
+    // Navbar scroll blur
     const nav = document.querySelector('nav');
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 60) {
-        nav.style.background = 'rgba(6, 6, 14, 0.92)';
+      if (window.scrollY > 50) {
+        nav.style.background = 'rgba(5, 5, 13, 0.94)';
+        nav.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.5)';
       } else {
-        nav.style.background = 'rgba(6, 6, 14, 0.72)';
+        nav.style.background = 'rgba(5, 5, 13, 0.78)';
+        nav.style.boxShadow = 'none';
       }
     });
+
+    // Mobile nav toggle
+    const mobileBtn = document.getElementById('btn-mobile-nav');
+    const navLinks = document.getElementById('nav-menu-links');
+    if (mobileBtn && navLinks) {
+      mobileBtn.addEventListener('click', () => {
+        navLinks.classList.toggle('nav-open');
+      });
+      navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          navLinks.classList.remove('nav-open');
+        });
+      });
+    }
   </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 // ─── Network Info Modal & TXT Export ─────────────────────────────────────────
-// ThunderTools - Auron Sistemas (https://auronsistemas.com.br)
+// ThunderTools - Thunder Sistemas
 
 const MOJIBAKE_MAP = [
   ['âšª', '⚪'], ['â”€', '─'], ['âœ”', '✔'], ['â Œ', '❌'], ['âš ', '⚠️'],
@@ -253,7 +253,7 @@ export function generateNetworkInfoTxtReport(hostInfo, adapters, rawOutput) {
   report += '================================================================================\r\n';
   report += (cleanMojibake(rawOutput || '')).trim() + '\r\n';
   report += '================================================================================\r\n';
-  report += 'Relatório emitido por ThunderTools • Auron Sistemas (https://auronsistemas.com.br)\r\n';
+  report += 'Relatório emitido por ThunderTools • Thunder\r\n';
   report += '================================================================================\r\n';
 
   return report;

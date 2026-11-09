@@ -9,7 +9,8 @@ const $ = selector => document.querySelector(selector);
 const SVG = {
   success: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
   error:   `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
-  warning: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+  warning: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  info:    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`
 };
 export const SVG_ICONS = SVG; // Mantém o alias original[cite: 7]
 const AUTO_CLOSE = 8000; //[cite: 7]
@@ -287,7 +288,7 @@ export function toast(type, title, msg) { //[cite: 7]
         box-shadow: 0 0 15px rgba(239, 68, 68, 0.5) !important;
       }
     </style>
-    <div class="toast-icon">${type === 'loading' ? '<span class="spinner"></span>' : SVG_ICONS[type]}</div>
+    <div class="toast-icon">${type === 'loading' ? '<span class="spinner"></span>' : (SVG_ICONS[type] || SVG_ICONS.info || SVG_ICONS.success || "")}</div>
     <div class="toast-body">
       <div class="toast-title">${title}</div>
       <div class="toast-msg">${formatNotificationMessage(msg)}</div>
@@ -342,7 +343,7 @@ export function updateToast(el, type, title, html) { //[cite: 7]
     el.classList.add('expanded'); //[cite: 7]
   } //[cite: 7]
   
-  el.querySelector('.toast-icon').innerHTML = SVG_ICONS[type]; //[cite: 7]
+  el.querySelector('.toast-icon').innerHTML = (SVG_ICONS[type] || SVG_ICONS.info || SVG_ICONS.success || ""); //[cite: 7]
   el.querySelector('.toast-title').textContent = title; //[cite: 7]
   el.querySelector('.toast-msg').innerHTML = formatNotificationMessage(html); //[cite: 7]
   createLucideIcons(); //[cite: 7]

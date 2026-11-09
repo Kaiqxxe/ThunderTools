@@ -1,0 +1,1523 @@
+/* ==========================================================================
+   ThunderTools - Glassmorphism Dark Theme Design System
+   Inspirado no visual Cyberpunk/Enterprise Dark com Neon Glow & Blur
+   ========================================================================== */
+
+:root {
+  --bg-main: #0a0d14;
+  --bg-sidebar: rgba(13, 17, 24, 0.75);
+  --bg-header: rgba(15, 20, 29, 0.85);
+  --bg-card: rgba(20, 27, 40, 0.55);
+  --bg-card-hover: rgba(28, 38, 56, 0.65);
+  --bg-glass-elevated: rgba(30, 41, 62, 0.7);
+
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-neon: rgba(99, 102, 241, 0.35);
+  --border-neon-glow: rgba(129, 140, 248, 0.5);
+
+  --neon-purple: #818cf8;
+  --neon-indigo: #6366f1;
+  --neon-cyan: #38bdf8;
+  --neon-green: #22c55e;
+  --neon-amber: #f59e0b;
+  --neon-red: #ef4444;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --shadow-neon: 0 0 20px rgba(99, 102, 241, 0.25);
+  --radius-card: 14px;
+  --radius-pill: 9999px;
+  --font-family: 'Poppins', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body[data-theme="light"] {
+  --bg-main: #f5f7fa;
+  --bg-sidebar: rgba(255, 255, 255, 0.95);
+  --bg-header: rgba(255, 255, 255, 0.98);
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-card-hover: #ffffff;
+  --bg-glass-elevated: rgba(255, 255, 255, 0.98);
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-neon: rgba(99, 102, 241, 0.25);
+  --border-neon-glow: rgba(99, 102, 241, 0.35);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --shadow-glass: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-neon: 0 0 16px rgba(99, 102, 241, 0.12);
+}
+
+/* Container Principal da Aplicação */
+.tt-app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(56, 189, 248, 0.05) 0%, transparent 45%);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Sidebar Fixa à Esquerda */
+.tt-sidebar {
+  width: 210px;
+  min-width: 210px;
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 10px;
+  z-index: 20;
+}
+
+.tt-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tt-nav-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+  margin: 12px 6px;
+}
+
+/* Item de Navegação (NavItem) */
+.tt-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  position: relative;
+}
+
+.tt-nav-item:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tt-nav-item.active {
+  color: #ffffff;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid var(--border-neon);
+  box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.2), 0 0 15px rgba(99, 102, 241, 0.15);
+}
+
+.tt-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 25%;
+  bottom: 25%;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--neon-purple);
+  box-shadow: 0 0 8px var(--neon-purple);
+}
+
+.tt-nav-icon {
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+/* Área de Conteúdo à Direita */
+.tt-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header Fixo no Topo */
+.tt-header {
+  height: 64px;
+  background: var(--bg-header);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.tt-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tt-brand-logo {
+  color: var(--neon-purple);
+  filter: drop-shadow(0 0 8px rgba(129, 140, 248, 0.6));
+}
+
+.tt-brand-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: #ffffff;
+}
+
+.tt-brand-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* System Quick Stats no Header */
+.tt-header-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tt-pill-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 14, 22, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tt-pill-label {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.tt-pill-val {
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.tt-pill-bar {
+  width: 44px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.tt-pill-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+  transition: width 0.4s ease;
+}
+
+.tt-header-version {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.tt-header-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tt-header-icon-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Área com Scroll Principal */
+.tt-main-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) rgba(10, 13, 20, 0.5);
+}
+
+/* Banner de Diagnóstico do Sistema */
+/* Banner de Diagnóstico do Sistema - Design Moderno e Responsivo */
+.tt-diagnostic-banner {
+  background: linear-gradient(135deg, rgba(20, 28, 42, 0.78) 0%, rgba(13, 20, 32, 0.85) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  border-radius: var(--radius-card);
+  padding: 18px 22px 14px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-glass), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tt-diagnostic-banner.attention {
+  border-color: rgba(245, 158, 11, 0.38);
+  box-shadow: var(--shadow-glass), 0 0 30px rgba(245, 158, 11, 0.12);
+  background: linear-gradient(135deg, rgba(28, 24, 20, 0.78) 0%, rgba(18, 16, 22, 0.85) 100%);
+}
+
+/* Linha Principal Superior: Informações e Ações */
+.tt-diag-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+}
+
+.tt-diag-left-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tt-diag-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neon-green);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.tt-diag-icon-wrapper.attention {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--neon-amber);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.28);
+}
+
+.tt-diag-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Linha de Categoria e Badges de Métricas */
+.tt-diag-header-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tt-diag-category-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  user-select: none;
+}
+
+.tt-diag-badges-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tt-diag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2.5px 9px;
+  border-radius: 999px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.tt-diag-pill.score.critical {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.tt-diag-pill.score.warning {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.tt-diag-pill.score.success {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.tt-diag-pill.storage {
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
+.tt-diag-headline {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 1px 0 0 0;
+  color: var(--neon-green);
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+}
+
+.tt-diag-headline.attention {
+  color: var(--neon-amber);
+}
+
+.tt-diag-subtext {
+  color: #94a3b8;
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin: 1px 0 0 0;
+}
+
+/* Grupo de Ações (Botões) */
+.tt-diag-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.tt-smart-care-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.3));
+  color: #a7f3d0;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.22s ease;
+  user-select: none;
+}
+
+.tt-smart-care-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(52, 211, 153, 0.75);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.25);
+  color: #ecfdf5;
+}
+
+/* Linha Inferior Unificada: Metadados e Ciclo */
+.tt-diag-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.tt-diag-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tt-diag-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 11.5px;
+}
+
+.tt-diag-meta-item i {
+  color: rgba(148, 163, 184, 0.75);
+}
+
+.tt-diag-footer-divider {
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 11px;
+  user-select: none;
+}
+
+.tt-diag-next-schedule {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.tt-diag-next-schedule i {
+  color: #38bdf8;
+}
+
+.tt-diag-audit-tag {
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.tt-diag-schedule-selector-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.tt-diag-schedule-selector-wrap:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.tt-diag-schedule-select {
+  background: transparent;
+  border: none;
+  color: #f1f5f9;
+  font-size: 11.5px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  padding: 1px 4px;
+  font-family: inherit;
+}
+
+.tt-diag-schedule-select option {
+  background: #0f172a;
+  color: #f1f5f9;
+}
+
+@media (max-width: 1080px) {
+  .tt-diag-main-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .tt-diag-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .tt-diag-footer-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+.tt-fix-btn {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  border: 1px solid rgba(165, 180, 252, 0.35);
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.tt-fix-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.55);
+  background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+}
+
+.tt-fix-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.tt-fix-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.tt-fix-btn.success {
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 100%) !important;
+  border-color: rgba(134, 239, 172, 0.45) !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.tt-refresh-diag-btn {
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.tt-refresh-diag-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.tt-refresh-diag-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.tt-refresh-diag-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Seção de Dashboards Grid */
+.tt-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.tt-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+
+.tt-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* Cards de Métricas Estilo Glassmorphism */
+.tt-metric-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 190px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-glass);
+}
+
+.tt-metric-card:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glass), 0 0 25px rgba(99, 102, 241, 0.12);
+}
+
+.tt-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tt-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tt-card-title-icon {
+  color: var(--neon-purple);
+  filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.4));
+  overflow: visible !important;
+}
+
+.tt-metric-card svg,
+.tt-brand-logo {
+  overflow: visible !important;
+}
+
+.tt-card-info-icon {
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tt-card-info-icon:hover {
+  color: var(--text-secondary);
+}
+
+/* Footer de Dados do Card */
+.tt-card-footer-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.tt-card-footer-stats strong {
+  color: var(--text-primary);
+}
+
+/* Gráfico Waveform / Linha */
+.tt-chart-canvas-container {
+  height: 90px;
+  width: 100%;
+  position: relative;
+}
+
+/* Donut Chart / Anel Circular */
+.tt-donut-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0;
+  overflow: visible;
+}
+
+.tt-donut-circle {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  overflow: visible;
+}
+
+.tt-donut-center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.tt-donut-pct {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  display: block;
+}
+
+.tt-donut-sub {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  display: block;
+}
+
+/* Gauge de Temperatura Térmica (CPU) */
+.tt-temp-wrapper {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.tt-temp-center-text {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tt-temp-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: -0.5px;
+  transition: color 0.4s ease;
+}
+
+.tt-temp-sub {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+#dash-temp-gauge-pivot {
+  display: none !important;
+}
+
+/* Velocímetro Dinâmico de Velocidade do Disco (C:) */
+.tt-speedometer-wrapper {
+  position: relative;
+  width: 100%;
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.tt-speed-center-text {
+  position: absolute;
+  bottom: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.tt-speed-val {
+  font-size: 19px;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  color: #38bdf8;
+  letter-spacing: -0.5px;
+  transition: color 0.4s ease;
+}
+
+.tt-speed-unit {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Barra Linear de Armazenamento */
+.tt-linear-disk-bar {
+  width: 100%;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 9px;
+  overflow: hidden;
+  margin: 20px 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  position: relative;
+}
+
+.tt-linear-disk-fill {
+  height: 100%;
+  border-radius: 9px;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* Processos em Destaque */
+.tt-process-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.tt-process-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 12px;
+}
+
+.tt-process-name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tt-process-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neon-purple);
+  font-size: 10px;
+}
+
+.tt-process-val {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Rodapé de Ações Técnicas & Exportação PDF */
+.tt-report-footer {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-glass);
+}
+
+.tt-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.tt-footer-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: var(--neon-purple);
+  font-weight: 600;
+  font-size: 11px;
+}
+
+/* Botão de Exportação PDF com Spinner */
+.tt-export-pdf-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 22px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-shadow: 0 4px 18px rgba(59, 130, 246, 0.35);
+  transition: all 0.25s ease;
+}
+
+.tt-export-pdf-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
+}
+
+.tt-export-pdf-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tt-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: tt-spin 0.8s linear infinite;
+}
+
+@keyframes tt-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Animações e Responsividade */
+@media (max-width: 1024px) {
+  .tt-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .tt-sidebar {
+    width: 60px;
+    min-width: 60px;
+    padding: 12px 6px;
+  }
+  .tt-nav-label {
+    display: none;
+  }
+  .tt-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ==========================================================================
+   Integração Tab Início com ThunderTools Core (Isolamento de Layout)
+   ========================================================================== */
+#tab-inicio.tab-content {
+  display: none !important;
+}
+
+#tab-inicio.tab-content.active {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  gap: 22px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 24px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+#tab-inicio .tt-diagnostic-banner {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+#tab-inicio section {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#tab-inicio .tt-metrics-grid {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#tab-inicio .tt-report-footer {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+}
+
+
+/* ==========================================================================
+   Botões de Informações e Modal de Métricas da Home
+   ========================================================================== */
+.tt-card-info-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #71717a);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tt-card-info-btn:hover {
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.15);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(129, 140, 248, 0.25);
+}
+
+.tt-card-info-btn:active {
+  transform: scale(0.95);
+}
+
+/* Modal de Métricas do Dashboard */
+.tt-metric-modal {
+  max-width: 620px !important;
+  width: 92vw !important;
+  background: linear-gradient(135deg, rgba(20, 20, 32, 0.98) 0%, rgba(13, 13, 22, 0.98) 100%) !important;
+  border: 1px solid rgba(129, 140, 248, 0.25) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  padding: 26px 28px !important;
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tt-metric-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 14px;
+}
+
+.tt-metric-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.tt-metric-modal-title i,
+.tt-metric-modal-title svg {
+  color: #818cf8;
+}
+
+.tt-metric-modal-close {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tt-metric-modal-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.tt-metric-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tt-metric-sec-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a5b4fc;
+}
+
+.tt-metric-sec-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #e2e8f0;
+}
+
+.tt-metric-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.tt-metric-status-col {
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tt-metric-status-col.normal {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.tt-metric-status-col.warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.tt-metric-status-col.critical {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.tt-metric-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tt-metric-status-col.normal .tt-metric-status-badge { color: #4ade80; }
+.tt-metric-status-col.warning .tt-metric-status-badge { color: #fbbf24; }
+.tt-metric-status-col.critical .tt-metric-status-badge { color: #f87171; }
+
+.tt-metric-status-text {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #cbd5e1;
+}
+
+.tt-metric-tips-box {
+  background: rgba(99, 102, 241, 0.07);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #c7d2fe;
+}
+
+/* ==========================================================================
+   Modo Claro / Light Mode - Dashboards & Diagnóstico em Tempo Real
+   ========================================================================== */
+
+/* Banner de Diagnóstico */
+body[data-theme="light"] .tt-diagnostic-banner {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  border-color: rgba(34, 197, 94, 0.45);
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+body[data-theme="light"] .tt-diagnostic-banner.attention {
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.98) 0%, rgba(254, 243, 199, 0.4) 100%);
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.1), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+body[data-theme="light"] .tt-diag-headline {
+  color: #15803d;
+}
+
+body[data-theme="light"] .tt-diag-headline.attention {
+  color: #b45309;
+}
+
+body[data-theme="light"] .tt-diag-subtext {
+  color: #475569;
+}
+
+body[data-theme="light"] .tt-diag-category-label {
+  color: #64748b;
+}
+
+body[data-theme="light"] .tt-diag-footer-bar {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme="light"] .tt-diag-meta-item {
+  color: #475569;
+}
+
+body[data-theme="light"] .tt-diag-meta-item strong {
+  color: #0f172a !important;
+}
+
+body[data-theme="light"] .tt-diag-footer-divider {
+  color: rgba(0, 0, 0, 0.18);
+}
+
+body[data-theme="light"] .tt-diag-next-schedule {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.25);
+}
+
+body[data-theme="light"] .tt-diag-audit-tag {
+  color: #334155;
+}
+
+body[data-theme="light"] .tt-diag-schedule-selector-wrap {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #475569;
+}
+
+body[data-theme="light"] .tt-diag-schedule-selector-wrap:hover {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+body[data-theme="light"] .tt-diag-schedule-select {
+  color: #0f172a;
+}
+
+body[data-theme="light"] .tt-diag-schedule-select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+body[data-theme="light"] .tt-refresh-diag-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #334155;
+}
+
+body[data-theme="light"] .tt-refresh-diag-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(99, 102, 241, 0.45);
+  color: #0f172a;
+}
+
+body[data-theme="light"] .tt-smart-care-btn {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.22));
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #065f46;
+}
+
+body[data-theme="light"] .tt-smart-care-btn:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.32));
+  color: #044e39;
+}
+
+/* Cards de Métricas em Tempo Real */
+body[data-theme="light"] .tt-metric-card {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+}
+
+body[data-theme="light"] .tt-metric-card:hover {
+  background: #ffffff !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.1) !important;
+}
+
+body[data-theme="light"] .tt-card-title-group {
+  color: #0f172a !important;
+}
+
+body[data-theme="light"] .tt-card-info-btn {
+  color: #94a3b8;
+}
+
+body[data-theme="light"] .tt-card-info-btn:hover {
+  color: #4f46e5;
+  background: rgba(79, 70, 229, 0.1);
+}
+
+body[data-theme="light"] .tt-card-footer-stats {
+  border-top-color: rgba(0, 0, 0, 0.06) !important;
+  color: #475569 !important;
+}
+
+body[data-theme="light"] .tt-card-footer-stats strong {
+  color: #0f172a !important;
+}
+
+/* Donut de RAM */
+body[data-theme="light"] .tt-donut-pct {
+  color: #0f172a !important;
+}
+
+body[data-theme="light"] .tt-donut-sub {
+  color: #64748b !important;
+}
+
+body[data-theme="light"] #dash-ram-avail,
+body[data-theme="light"] #dash-ram-cache {
+  color: #0f172a !important;
+}
+
+/* Trilhas SVG de Fundo dos Gráficos Circulares e Arcos */
+body[data-theme="light"] .tt-donut-circle svg circle:first-child,
+body[data-theme="light"] .tt-temp-wrapper svg path:first-child,
+body[data-theme="light"] .tt-speedometer-wrapper svg path:first-child {
+  stroke: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Gauge de Temperatura Térmica */
+body[data-theme="light"] .tt-temp-sub {
+  color: #64748b !important;
+}
+
+/* Velocímetro de Disco */
+body[data-theme="light"] .tt-speed-unit {
+  color: #64748b !important;
+}
+
+/* Barra Linear de Armazenamento */
+body[data-theme="light"] .tt-linear-disk-bar {
+  background: rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Processos e Gráficos */
+body[data-theme="light"] .tt-process-item {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  color: #0f172a !important;
+}
+
+body[data-theme="light"] .tt-process-val {
+  color: #475569 !important;
+}
+
+/* Rodapé do Dashboard */
+body[data-theme="light"] .tt-report-footer {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
+}
+
+body[data-theme="light"] .tt-footer-info {
+  color: #475569 !important;
+}
+
+body[data-theme="light"] .tt-footer-badge {
+  background: rgba(99, 102, 241, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+  color: #4f46e5 !important;
+}
+
+/* Modal Explicativo de Métricas do Dashboard */
+body[data-theme="light"] .tt-metric-modal {
+  background: #ffffff !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+body[data-theme="light"] .tt-metric-modal-header {
+  border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+body[data-theme="light"] .tt-metric-modal-title {
+  color: #0f172a !important;
+}
+
+body[data-theme="light"] .tt-metric-modal-close {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #475569 !important;
+}
+
+body[data-theme="light"] .tt-metric-sec-title {
+  color: #4f46e5 !important;
+}
+
+body[data-theme="light"] .tt-metric-sec-box {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  color: #334155 !important;
+}
+
+body[data-theme="light"] .tt-metric-status-col.normal {
+  background: rgba(34, 197, 94, 0.08) !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+body[data-theme="light"] .tt-metric-status-col.warning {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+body[data-theme="light"] .tt-metric-status-col.critical {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+body[data-theme="light"] .tt-metric-status-col.normal .tt-metric-status-badge { color: #16a34a !important; }
+body[data-theme="light"] .tt-metric-status-col.warning .tt-metric-status-badge { color: #d97706 !important; }
+body[data-theme="light"] .tt-metric-status-col.critical .tt-metric-status-badge { color: #dc2626 !important; }
+
+body[data-theme="light"] .tt-metric-status-text {
+  color: #475569 !important;
+}
+
+body[data-theme="light"] .tt-metric-tips-box {
+  background: rgba(99, 102, 241, 0.06) !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
+  color: #3730a3 !important;
+}
