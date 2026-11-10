@@ -6032,6 +6032,196 @@ body[data-theme="light"] .details-modal div[style*="background: rgba(0, 0, 0, 0.
 .ai-cmd-btn.btn-exec { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.35); color: #34d399; }
 .ai-cmd-btn.btn-exec:hover { background: rgba(16, 185, 129, 0.3); color: #fff; }
 
+/* ═══════════════════════════════════════════════════════════
+   STATUS BAR DE EXECUÇÃO DOS COMANDOS DA THUNDER IA
+   ═══════════════════════════════════════════════════════════ */
+.ai-cmd-status-bar-container {
+  margin-top: 8px;
+  background: rgba(8, 12, 24, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.ai-cmd-status-bar-container.running {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
+}
+
+.ai-cmd-status-bar-container.success {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(6, 26, 18, 0.5);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.1);
+}
+
+.ai-cmd-status-bar-container.error {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(30, 10, 14, 0.5);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.1);
+}
+
+.ai-cmd-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.ai-cmd-status-lead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #94a3b8;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 82%;
+}
+
+.ai-cmd-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #64748b;
+  transition: all 0.25s ease;
+}
+
+.ai-cmd-status-dot.idle {
+  background: #64748b;
+}
+
+.ai-cmd-status-dot.running {
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse-dot 1s infinite alternate;
+}
+
+.ai-cmd-status-dot.success {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.ai-cmd-status-dot.error {
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.ai-cmd-status-percentage {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  color: #94a3b8;
+  transition: color 0.25s ease;
+}
+
+.ai-cmd-status-bar-container.running .ai-cmd-status-percentage {
+  color: #38bdf8;
+}
+.ai-cmd-status-bar-container.success .ai-cmd-status-percentage {
+  color: #34d399;
+}
+.ai-cmd-status-bar-container.error .ai-cmd-status-percentage {
+  color: #f87171;
+}
+
+.ai-cmd-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ai-cmd-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6366f1, #a855f7);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+  position: relative;
+}
+
+.ai-cmd-status-bar-container.running .ai-cmd-progress-fill {
+  background: linear-gradient(90deg, #6366f1, #38bdf8, #a855f7);
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.6s infinite linear;
+}
+
+@keyframes progress-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ai-cmd-status-bar-container.success .ai-cmd-progress-fill {
+  background: linear-gradient(90deg, #059669, #10b981) !important;
+}
+
+.ai-cmd-status-bar-container.error .ai-cmd-progress-fill {
+  background: linear-gradient(90deg, #dc2626, #ef4444) !important;
+}
+
+.ai-cmd-status-log {
+  font-family: 'Consolas', monospace;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: #94a3b8;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 5px 8px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 75px;
+  overflow-y: auto;
+  border-left: 2px solid #6366f1;
+}
+
+.ai-cmd-status-log.success {
+  border-left-color: #10b981;
+  color: #cbd5e1;
+}
+
+.ai-cmd-status-log.error {
+  border-left-color: #ef4444;
+  color: #fca5a5;
+}
+
+/* Light Theme support */
+body[data-theme="light"] .ai-cmd-status-bar-container {
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+body[data-theme="light"] .ai-cmd-status-bar-container.running {
+  border-color: rgba(14, 165, 233, 0.45);
+  background: #f0f9ff;
+}
+body[data-theme="light"] .ai-cmd-status-bar-container.success {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: #f0fdf4;
+}
+body[data-theme="light"] .ai-cmd-status-bar-container.error {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: #fef2f2;
+}
+body[data-theme="light"] .ai-cmd-progress-track {
+  background: #e2e8f0;
+}
+body[data-theme="light"] .ai-cmd-status-lead {
+  color: #475569;
+}
+body[data-theme="light"] .ai-cmd-status-log {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-left-width: 3px;
+}
+
 /* Orientações Manuais */
 .ai-guidelines-card {
   background: rgba(15, 23, 42, 0.55);

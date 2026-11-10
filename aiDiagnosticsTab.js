@@ -337,7 +337,7 @@ export function initAiDiagnosticsTab(ctx = {}) {
 
         <div class="ai-commands-list">
           ${comandos.length ? comandos.map((cmdObj, i) => `
-            <div class="ai-cmd-row" data-cmd="${escapeHtml(cmdObj.comando)}">
+            <div class="ai-cmd-row" data-cmd="${escapeHtml(cmdObj.comando)}" data-cmd-index="${i}">
               <div class="ai-cmd-meta">
                 <span class="ai-cmd-num">#${i + 1}</span>
                 <span class="ai-cmd-desc">${escapeHtml(cmdObj.descricao || 'Comando de Reparo')}</span>
@@ -353,6 +353,21 @@ export function initAiDiagnosticsTab(ctx = {}) {
                     <i data-lucide="play" style="width:13px;height:13px"></i> Executar
                   </button>
                 </div>
+              </div>
+
+              <!-- BARRA DE STATUS / PROGRESSO LOGO ABAIXO DO COMANDO -->
+              <div class="ai-cmd-status-bar-container" id="ai-cmd-status-${i}">
+                <div class="ai-cmd-status-header">
+                  <div class="ai-cmd-status-lead">
+                    <span class="ai-cmd-status-dot idle"></span>
+                    <span class="ai-cmd-status-label">Pronto para execução</span>
+                  </div>
+                  <span class="ai-cmd-status-percentage">0%</span>
+                </div>
+                <div class="ai-cmd-progress-track">
+                  <div class="ai-cmd-progress-fill" style="width: 0%;"></div>
+                </div>
+                <div class="ai-cmd-status-log" style="display: none;"></div>
               </div>
             </div>
           `).join('') : `
@@ -421,6 +436,162 @@ export function initAiDiagnosticsTab(ctx = {}) {
       });
     }
 
+    // Função para Executar Comando e Atualizar a Status Bar em Tempo Real
+    async function executeSingleCommand(row, cmd) {
+      if (!row) return { success: false };
+      const execBtn = row.querySelector('.btn-exec');
+      const statusContainer = row.querySelector('.ai-cmd-status-bar-container');
+      const dot = statusContainer?.querySelector('.ai-cmd-status-dot');
+      const label = statusContainer?.querySelector('.ai-cmd-status-label');
+      const percentage = statusContainer?.querySelector('.ai-cmd-status-percentage');
+      const fill = statusContainer?.querySelector('.ai-cmd-progress-fill');
+      const logEl = statusContainer?.querySelector('.ai-cmd-status-log');
+
+      if (execBtn) {
+        execBtn.disabled = true;
+        execBtn.innerHTML = '<i data-lucide="loader" style="width:13px;height:13px;animation:spin 1s linear infinite"></i> Executando...';
+        createLucideIcons(execBtn);
+      }
+
+      if (statusContainer) {
+        statusContainer.className = 'ai-cmd-status-bar-container running';
+        if (dot) dot.className = 'ai-cmd-status-dot running';
+        if (label) label.textContent = 'Executando comando no Windows...';
+        if (percentage) percentage.textContent = 'Iniciando...';
+        if (fill) fill.style.width = '12%';
+        if (logEl) {
+          logEl.style.display = 'none';
+          logEl.textContent = '';
+        }
+      }
+
+      const trackingId = 'ai-cmd-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5);
+      let simulatedProgress = 12;
+      let realProgressReceived = false;
+
+      // Animação suave caso o comando não emita porcentagens explicitamente
+      const simInterval = setInterval(() => {
+        if (!realProgressReceived && simulatedProgress < 85) {
+          simulatedProgress += Math.max(1, Math.round((85 - simulatedProgress) * 0.12));
+          if (fill) fill.style.width = `${simulatedProgress}%`;
+          if (percentage) percentage.textContent = `${simulatedProgress}%`;
+        }
+      }, 350);
+
+      // Ouvinte de progresso e saída de terminal em tempo real
+      const removeProgressListener = (window.api && window.api.onCommandProgress) ? window.api.onCommandProgress((data) => {
+        if (data.id !== trackingId) return;
+
+        if (data.percent !== null && data.percent !== undefined) {
+          realProgressReceived = true;
+          const p = Math.min(100, Math.max(0, Math.round(data.percent)));
+          if (fill) fill.style.width = `${p}%`;
+          if (percentage) percentage.textContent = `${p}%`;
+        }
+
+        if (data.message && label) {
+          const cleanMsg = data.message.replace(/[\r\n]+/g, ' ').trim();
+          if (cleanMsg) {
+            label.textContent = cleanMsg.length > 55 ? cleanMsg.substring(0, 52) + '...' : cleanMsg;
+          }
+        }
+
+        if (data.chunk && logEl) {
+          logEl.style.display = 'block';
+          const lines = data.chunk.trim().split(/[\r\n]+/).filter(Boolean);
+          if (lines.length) {
+            logEl.textContent = lines.slice(-3).join('\n');
+            logEl.scrollTop = logEl.scrollHeight;
+          }
+        }
+      }) : null;
+
+      try {
+        const runRes = (window.api && window.api.runTrackedCommand)
+          ? await window.api.runTrackedCommand(cmd, trackingId)
+          : await window.api.runCommand(cmd);
+
+        clearInterval(simInterval);
+        if (removeProgressListener) removeProgressListener();
+
+        if (execBtn) execBtn.disabled = false;
+
+        if (runRes && runRes.success) {
+          if (statusContainer) {
+            statusContainer.className = 'ai-cmd-status-bar-container success';
+            if (dot) dot.className = 'ai-cmd-status-dot success';
+            if (label) label.textContent = 'Concluído com sucesso!';
+            if (percentage) percentage.textContent = '100%';
+            if (fill) fill.style.width = '100%';
+            if (logEl) {
+              const out = (runRes.output || '').trim();
+              if (out) {
+                logEl.style.display = 'block';
+                logEl.className = 'ai-cmd-status-log success';
+                logEl.textContent = out.split(/[\r\n]+/).slice(-4).join('\n');
+              }
+            }
+          }
+
+          if (execBtn) {
+            execBtn.innerHTML = '<i data-lucide="check-circle-2" style="width:13px;height:13px;color:#34d399"></i> Concluído';
+            createLucideIcons(execBtn);
+          }
+
+          toast('success', 'Comando Executado', `Executado com êxito: ${cmd}`);
+          addToHistory(`Thunder IA: ${cmd.slice(0, 45)}`, cmd, true, 'terminal');
+          return { success: true, runRes };
+        } else {
+          if (statusContainer) {
+            statusContainer.className = 'ai-cmd-status-bar-container error';
+            if (dot) dot.className = 'ai-cmd-status-dot error';
+            if (label) label.textContent = 'Falha na execução do comando';
+            if (percentage) percentage.textContent = 'Erro';
+            if (fill) fill.style.width = '100%';
+            if (logEl) {
+              logEl.style.display = 'block';
+              logEl.className = 'ai-cmd-status-log error';
+              logEl.textContent = (runRes?.output || 'Erro na execução. Verifique privilégios ou parâmetros.').trim();
+            }
+          }
+
+          if (execBtn) {
+            execBtn.innerHTML = '<i data-lucide="alert-triangle" style="width:13px;height:13px;color:#f87171"></i> Falhou';
+            createLucideIcons(execBtn);
+          }
+
+          toast('error', 'Falha no Comando', runRes?.output || 'Erro na execução.');
+          addToHistory(`Thunder IA (Falha): ${cmd.slice(0, 45)}`, cmd, false, 'terminal');
+          return { success: false, runRes };
+        }
+      } catch (err) {
+        clearInterval(simInterval);
+        if (removeProgressListener) removeProgressListener();
+
+        if (execBtn) {
+          execBtn.disabled = false;
+          execBtn.innerHTML = '<i data-lucide="alert-triangle" style="width:13px;height:13px;color:#f87171"></i> Falhou';
+          createLucideIcons(execBtn);
+        }
+
+        if (statusContainer) {
+          statusContainer.className = 'ai-cmd-status-bar-container error';
+          if (dot) dot.className = 'ai-cmd-status-dot error';
+          if (label) label.textContent = 'Erro inesperado';
+          if (percentage) percentage.textContent = 'Erro';
+          if (fill) fill.style.width = '100%';
+          if (logEl) {
+            logEl.style.display = 'block';
+            logEl.className = 'ai-cmd-status-log error';
+            logEl.textContent = err.message || 'Erro durante a execução.';
+          }
+        }
+
+        toast('error', 'Erro', err.message);
+        return { success: false, error: err };
+      }
+    }
+
     // Eventos dos Comandos Individuais
     dashboardContainer.querySelectorAll('.ai-cmd-row').forEach(row => {
       const cmd = row.dataset.cmd;
@@ -441,31 +612,7 @@ export function initAiDiagnosticsTab(ctx = {}) {
 
       if (execBtn) {
         execBtn.addEventListener('click', async () => {
-          execBtn.disabled = true;
-          const orig = execBtn.innerHTML;
-          execBtn.innerHTML = '<i data-lucide="loader" style="width:13px;height:13px;animation:spin 1s linear infinite"></i> Executando...';
-          createLucideIcons(execBtn);
-
-          try {
-            const runRes = await window.api.runCommand(cmd);
-            execBtn.disabled = false;
-            if (runRes && runRes.success) {
-              execBtn.innerHTML = '<i data-lucide="check-circle-2" style="width:13px;height:13px;color:#34d399"></i> Concluído';
-              createLucideIcons(execBtn);
-              toast('success', 'Comando Executado', `Executado com êxito: ${cmd}`);
-              addToHistory(`Thunder IA: ${cmd.slice(0, 45)}`, cmd, true, 'terminal');
-            } else {
-              execBtn.innerHTML = '<i data-lucide="alert-triangle" style="width:13px;height:13px;color:#f87171"></i> Falhou';
-              createLucideIcons(execBtn);
-              toast('error', 'Falha no Comando', runRes?.output || 'Erro na execução.');
-              addToHistory(`Thunder IA (Falha): ${cmd.slice(0, 45)}`, cmd, false, 'terminal');
-            }
-          } catch (err) {
-            execBtn.disabled = false;
-            execBtn.innerHTML = orig;
-            createLucideIcons(execBtn);
-            toast('error', 'Erro', err.message);
-          }
+          await executeSingleCommand(row, cmd);
         });
       }
     });
@@ -476,22 +623,20 @@ export function initAiDiagnosticsTab(ctx = {}) {
       batchExecBtn.addEventListener('click', async () => {
         batchExecBtn.disabled = true;
         const orig = batchExecBtn.innerHTML;
-        batchExecBtn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite"></i> Executando Plano de Ação...';
-        createLucideIcons(batchExecBtn);
+        const rows = dashboardContainer.querySelectorAll('.ai-cmd-row');
 
         let successCount = 0;
         for (let i = 0; i < comandos.length; i++) {
           const item = comandos[i];
+          const row = rows[i];
+          batchExecBtn.innerHTML = `<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite"></i> Executando [${i + 1}/${comandos.length}]...`;
+          createLucideIcons(batchExecBtn);
+
           toast('info', `Executando [${i + 1}/${comandos.length}]`, item.descricao || item.comando);
-          try {
-            const r = await window.api.runCommand(item.comando);
-            if (r && r.success) {
-              successCount++;
-              addToHistory(`Thunder IA (#${i + 1}): ${item.comando.slice(0, 45)}`, item.comando, true, 'terminal');
-            } else {
-              addToHistory(`Thunder IA (#${i + 1} Falha): ${item.comando.slice(0, 45)}`, item.comando, false, 'terminal');
-            }
-          } catch (_) {}
+          const res = await executeSingleCommand(row, item.comando);
+          if (res && res.success) {
+            successCount++;
+          }
         }
 
         batchExecBtn.disabled = false;
