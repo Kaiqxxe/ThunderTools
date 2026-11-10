@@ -6064,6 +6064,12 @@ body[data-theme="light"] .details-modal div[style*="background: rgba(0, 0, 0, 0.
   box-shadow: 0 0 16px rgba(239, 68, 68, 0.1);
 }
 
+.ai-cmd-status-bar-container.cancelled {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(35, 25, 10, 0.5);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.1);
+}
+
 .ai-cmd-status-header {
   display: flex;
   align-items: center;
@@ -6112,6 +6118,11 @@ body[data-theme="light"] .details-modal div[style*="background: rgba(0, 0, 0, 0.
   box-shadow: 0 0 8px #ef4444;
 }
 
+.ai-cmd-status-dot.cancelled {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
 .ai-cmd-status-percentage {
   font-size: 11px;
   font-weight: 700;
@@ -6128,6 +6139,9 @@ body[data-theme="light"] .details-modal div[style*="background: rgba(0, 0, 0, 0.
 }
 .ai-cmd-status-bar-container.error .ai-cmd-status-percentage {
   color: #f87171;
+}
+.ai-cmd-status-bar-container.cancelled .ai-cmd-status-percentage {
+  color: #fbbf24;
 }
 
 .ai-cmd-progress-track {
@@ -6167,6 +6181,10 @@ body[data-theme="light"] .details-modal div[style*="background: rgba(0, 0, 0, 0.
   background: linear-gradient(90deg, #dc2626, #ef4444) !important;
 }
 
+.ai-cmd-status-bar-container.cancelled .ai-cmd-progress-fill {
+  background: linear-gradient(90deg, #d97706, #f59e0b) !important;
+}
+
 .ai-cmd-status-log {
   font-family: 'Consolas', monospace;
   font-size: 10.5px;
@@ -6190,6 +6208,23 @@ body[data-theme="light"] .details-modal div[style*="background: rgba(0, 0, 0, 0.
 .ai-cmd-status-log.error {
   border-left-color: #ef4444;
   color: #fca5a5;
+}
+
+.ai-cmd-status-log.cancelled {
+  border-left-color: #f59e0b;
+  color: #fde68a;
+}
+
+.ai-cmd-btn.btn-cancel-exec {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #fca5a5 !important;
+}
+
+.ai-cmd-btn.btn-cancel-exec:hover {
+  background: rgba(239, 68, 68, 0.32) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
 }
 
 /* Light Theme support */

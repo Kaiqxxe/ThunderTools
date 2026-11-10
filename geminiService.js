@@ -303,6 +303,96 @@ async function callGemini15Flash(apiKey, promptText, systemInstructionText) {
 }
 
 /**
+ * Sanitiza e valida comandos sugeridos pela IA para evitar alucinações e comandos interativos
+ */
+function sanitizeDiagnosisOutput(diagnosis) {
+  if (!diagnosis || typeof diagnosis !== 'object') return diagnosis;
+
+  if (Array.isArray(diagnosis.comandosSugeridos)) {
+    const sanitizedCommands = [];
+
+    for (const item of diagnosis.comandosSugeridos) {
+      if (!item || !item.comando) continue;
+      let rawCmd = String(item.comando).trim();
+      let rawTipo = String(item.tipo || 'cmd').toLowerCase();
+      let rawDesc = String(item.descricao || 'Correção do Sistema').trim();
+
+      // Limpar blocos markdown acidentais
+      rawCmd = rawCmd.replace(/^```[a-zA-Z0-9_-]*\r?\n?/, '').replace(/\r?\n?```$/, '').trim();
+      // Remover comandos pause que travam terminal oculto
+      rawCmd = rawCmd.replace(/^\s*pause\s*(&+|\|+|;)?\s*/gi, '')
+      rawCmd = rawCmd.replace(/\s*(&+|\|+|;)\s*pause\s*$/gi, '')
+      rawCmd = rawCmd.replace(/\s*(&+|\|+|;)\s*pause\s*(&+|\|+|;)\s*/gi, ' $1 ')
+      rawCmd = rawCmd.replace(/(?:\r?\n)\s*pause\s*(?:\r?\n|$)/gi, '\n')
+      rawCmd = rawCmd.trim()
+
+      // Mapeamento e correção de alucinações frequentes de LLMs em ambiente Windows:
+      // 1. Clear-WindowsUpdateCache (não existe nativamente)
+      if (/Clear-WindowsUpdateCache/i.test(rawCmd)) {
+        rawCmd = 'net stop wuauserv && net stop bits && del /f /q /s %windir%\\SoftwareDistribution\\Download\\* && net start wuauserv && net start bits';
+        rawTipo = 'cmd';
+        rawDesc = 'Redefinir e limpar cache corrompido do Windows Update';
+      }
+      // 2. Reset-PrintSpooler (não existe nativamente)
+      else if (/Reset-PrintSpooler/i.test(rawCmd)) {
+        rawCmd = 'net stop spooler && del /q /f /s %systemroot%\\System32\\Spool\\Printers\\* && net start spooler';
+        rawTipo = 'cmd';
+        rawDesc = 'Reiniciar spooler e limpar fila de impressão travada';
+      }
+      // 3. Flush-Dns (o correto é Clear-DnsClientCache ou ipconfig /flushdns)
+      else if (/Flush-Dns/i.test(rawCmd)) {
+        rawCmd = 'ipconfig /flushdns';
+        rawTipo = 'cmd';
+        rawDesc = 'Limpar e liberar o cache de resolução DNS';
+      }
+      // 4. Repair-WindowsImage
+      else if (/Repair-WindowsImage\s+-Online\s+-RestoreHealth/i.test(rawCmd)) {
+        rawCmd = 'DISM /Online /Cleanup-Image /RestoreHealth';
+        rawTipo = 'cmd';
+      }
+      // 5. Restart-Service sem -Force
+      else if (/^Restart-Service\b/i.test(rawCmd) && !/-Force/i.test(rawCmd)) {
+        rawCmd += ' -Force';
+        rawTipo = 'powershell';
+      }
+      // 6. Stop-Service sem -Force
+      else if (/^Stop-Service\b/i.test(rawCmd) && !/-Force/i.test(rawCmd)) {
+        rawCmd += ' -Force';
+        rawTipo = 'powershell';
+      }
+      // 7. Remove-Item sem -Force
+      else if (/^Remove-Item\b/i.test(rawCmd) && !/-Force/i.test(rawCmd)) {
+        rawCmd += ' -Force';
+        rawTipo = 'powershell';
+      }
+      // 8. Se for comando tradicional do CMD marcado erroneamente como powershell
+      else if (/^(sfc|dism|ipconfig|net|chkdsk|reg|cleanmgr)\b/i.test(rawCmd)) {
+        rawTipo = 'cmd';
+      }
+      // 9. Se for cmdlet PowerShell (Verb-Noun) mas marcado como cmd
+      else if (/^[a-zA-Z]+-[a-zA-Z]+/i.test(rawCmd)) {
+        rawTipo = 'powershell';
+      }
+
+      // Adicionar /f para reg add/delete se faltar
+      if (/\breg\s+(add|delete)\b/i.test(rawCmd) && !/\s\/[fy]\b/i.test(rawCmd)) {
+        rawCmd += ' /f';
+      }
+
+      sanitizedCommands.push({
+        comando: rawCmd,
+        descricao: rawDesc,
+        tipo: rawTipo
+      });
+    }
+
+    diagnosis.comandosSugeridos = sanitizedCommands;
+  }
+
+  return diagnosis;
+}
+
+/**
  * Função orquestradora da análise diagnóstica com Gemini 1.5
  */
 async function runGeminiDiagnosticAnalysis(options = {}) {
@@ -348,6 +438,21 @@ async function runGeminiDiagnosticAnalysis(options = {}) {
   const systemInstruction = `Você é o Motor de Inteligência Artificial Thunder IA, Especialista em Manutenção e Diagnóstico do ThunderTools, desenvolvido e mantido por Thunder.
 Sua missão é atuar como engenheiro sênior de suporte e sistemas Windows. Analise com rigor técnico os dados de diagnóstico e logs fornecidos (CBS, DISM, Event Viewer, BSOD, serviços e hardware).
 
+DIRETRIZES OBRIGATÓRIAS PARA OS COMANDOS SUGERIDOS:
+1. O sistema operacional é estritamente WINDOWS 10 / WINDOWS 11. NUNCA sugira comandos de Linux (como sudo, systemctl, journalctl, apt, etc.).
+2. NUNCA INVENTE cmdlets fictícios no PowerShell (ex: 'Clear-WindowsUpdateCache', 'Reset-PrintSpooler', 'Flush-Dns' NÃO EXISTEM).
+   - Para redefinir o Windows Update, use comandos reais do CMD (net stop wuauserv && net stop bits && del /f /q /s %windir%\\SoftwareDistribution\\Download\\* && net start wuauserv && net start bits).
+   - Para limpar cache DNS, use 'ipconfig /flushdns' (tipo: 'cmd') ou 'Clear-DnsClientCache' (tipo: 'powershell').
+   - Para reparar arquivos de sistema e imagem, use 'sfc /scannow' e 'DISM /Online /Cleanup-Image /RestoreHealth' (tipo: 'cmd').
+   - Para reiniciar spooler de impressão, use 'net stop spooler && del /q /f /s %systemroot%\\System32\\Spool\\Printers\\* && net start spooler' (tipo: 'cmd').
+3. EXECUÇÃO 100% NÃO-INTERATIVA (NUNCA solicite confirmação interativa ao usuário):
+   - No CMD: sempre inclua '/f', '/q' ou '/y' (ex: reg add ... /f, reg delete ... /f, del /f /q ...). NUNCA utilize 'pause'.
+   - No PowerShell: sempre inclua parâmetros silenciosos não-interativos: '-Force', '-Confirm:$false' (ex: Restart-Service -Name Spooler -Force).
+4. O campo "tipo" DEVE refletir com precisão a sintaxe do comando:
+   - "powershell": cmdlets com formato Verbo-Substantivo (ex: Restart-Service, Get-Process, Clear-DnsClientCache, Set-ItemProperty).
+   - "cmd": binários nativos tradicionais (ex: sfc, dism, ipconfig, net, reg, chkdsk, cleanmgr).
+5. Cada comando deve ser uma linha clara e autocontida, sem blocos de markdown (\`\`\`) dentro da propriedade comando.
+
 Responda ESTRITAMENTE em formato JSON com o seguinte schema:
 {
   "statusGeral": "CRÍTICO" | "ALERTA" | "MODERADO" | "SAUDÁVEL",
@@ -359,7 +464,7 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema:
   "impactoSistema": "Impacto na fluidez, estabilidade, integridade ou segurança do computador",
   "comandosSugeridos": [
     {
-      "comando": "Comando exato e seguro para CMD ou PowerShell (sem quebras desnecessárias)",
+      "comando": "Comando exato e seguro para CMD ou PowerShell",
       "descricao": "Finalidade objetiva deste comando",
       "tipo": "powershell" | "cmd"
     }
@@ -380,7 +485,8 @@ ${logText}
 Por favor, analise a integridade, localize falhas ou causas de lentidão/erros e gere o plano de ação técnico estruturado.`;
 
   try {
-    const diagnosis = await callGemini15Flash(activeKey, promptContent, systemInstruction);
+    const rawDiagnosis = await callGemini15Flash(activeKey, promptContent, systemInstruction);
+    const diagnosis = sanitizeDiagnosisOutput(rawDiagnosis);
     return {
       success: true,
       logType,

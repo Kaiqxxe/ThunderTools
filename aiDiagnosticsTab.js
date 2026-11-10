@@ -337,7 +337,7 @@ export function initAiDiagnosticsTab(ctx = {}) {
 
         <div class="ai-commands-list">
           ${comandos.length ? comandos.map((cmdObj, i) => `
-            <div class="ai-cmd-row" data-cmd="${escapeHtml(cmdObj.comando)}" data-cmd-index="${i}">
+            <div class="ai-cmd-row" data-cmd="${escapeHtml(cmdObj.comando)}" data-cmd-type="${escapeHtml(cmdObj.tipo || 'cmd')}" data-cmd-index="${i}">
               <div class="ai-cmd-meta">
                 <span class="ai-cmd-num">#${i + 1}</span>
                 <span class="ai-cmd-desc">${escapeHtml(cmdObj.descricao || 'Comando de Reparo')}</span>
@@ -439,6 +439,7 @@ export function initAiDiagnosticsTab(ctx = {}) {
     // Função para Executar Comando e Atualizar a Status Bar em Tempo Real
     async function executeSingleCommand(row, cmd) {
       if (!row) return { success: false };
+      const cmdType = row.dataset.cmdType || 'cmd';
       const execBtn = row.querySelector('.btn-exec');
       const statusContainer = row.querySelector('.ai-cmd-status-bar-container');
       const dot = statusContainer?.querySelector('.ai-cmd-status-dot');
@@ -447,20 +448,39 @@ export function initAiDiagnosticsTab(ctx = {}) {
       const fill = statusContainer?.querySelector('.ai-cmd-progress-fill');
       const logEl = statusContainer?.querySelector('.ai-cmd-status-log');
 
+      // Se já estiver rodando e o usuário clicar no botão de cancelar
+      if (row.dataset.running === 'true') {
+        if (window.api && window.api.cancelCommand) {
+          window.api.cancelCommand();
+        }
+        if (label) label.textContent = 'Cancelando execução...';
+        if (execBtn) {
+          execBtn.disabled = true;
+          execBtn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px;animation:spin 1s linear infinite"></i> Cancelando...';
+          createLucideIcons(execBtn);
+        }
+        return { success: false, cancelled: true };
+      }
+
+      row.dataset.running = 'true';
+
       if (execBtn) {
-        execBtn.disabled = true;
-        execBtn.innerHTML = '<i data-lucide="loader" style="width:13px;height:13px;animation:spin 1s linear infinite"></i> Executando...';
+        execBtn.disabled = false;
+        execBtn.className = 'ai-cmd-btn btn-exec btn-cancel-exec';
+        execBtn.title = 'Clique para cancelar este comando';
+        execBtn.innerHTML = '<i data-lucide="square" style="width:12px;height:12px"></i> Cancelar';
         createLucideIcons(execBtn);
       }
 
       if (statusContainer) {
         statusContainer.className = 'ai-cmd-status-bar-container running';
         if (dot) dot.className = 'ai-cmd-status-dot running';
-        if (label) label.textContent = 'Executando comando no Windows...';
+        if (label) label.textContent = cmdType === 'powershell' ? 'Executando cmdlet no PowerShell...' : 'Executando comando no CMD...';
         if (percentage) percentage.textContent = 'Iniciando...';
         if (fill) fill.style.width = '12%';
         if (logEl) {
           logEl.style.display = 'none';
+          logEl.className = 'ai-cmd-status-log';
           logEl.textContent = '';
         }
       }
@@ -500,7 +520,7 @@ export function initAiDiagnosticsTab(ctx = {}) {
           logEl.style.display = 'block';
           const lines = data.chunk.trim().split(/[\r\n]+/).filter(Boolean);
           if (lines.length) {
-            logEl.textContent = lines.slice(-3).join('\n');
+            logEl.textContent = lines.slice(-4).join('\n');
             logEl.scrollTop = logEl.scrollHeight;
           }
         }
@@ -508,13 +528,60 @@ export function initAiDiagnosticsTab(ctx = {}) {
 
       try {
         const runRes = (window.api && window.api.runTrackedCommand)
-          ? await window.api.runTrackedCommand(cmd, trackingId)
-          : await window.api.runCommand(cmd);
+          ? await window.api.runTrackedCommand(cmd, trackingId, { type: cmdType })
+          : await window.api.runCommand(cmd, { type: cmdType });
 
         clearInterval(simInterval);
         if (removeProgressListener) removeProgressListener();
 
-        if (execBtn) execBtn.disabled = false;
+        row.dataset.running = 'false';
+        if (execBtn) {
+          execBtn.disabled = false;
+          execBtn.className = 'ai-cmd-btn btn-exec';
+          execBtn.title = 'Executar este comando no ThunderTools';
+        }
+
+        if (runRes && runRes.cancelled) {
+          if (statusContainer) {
+            statusContainer.className = 'ai-cmd-status-bar-container cancelled';
+            if (dot) dot.className = 'ai-cmd-status-dot cancelled';
+            if (label) label.textContent = 'Operação cancelada pelo usuário';
+            if (percentage) percentage.textContent = 'Cancelado';
+            if (fill) fill.style.width = '100%';
+            if (logEl) {
+              logEl.style.display = 'block';
+              logEl.className = 'ai-cmd-status-log';
+              logEl.textContent = 'Execução interrompida a pedido do usuário.';
+            }
+          }
+          if (execBtn) {
+            execBtn.innerHTML = '<i data-lucide="play" style="width:13px;height:13px"></i> Executar';
+            createLucideIcons(execBtn);
+          }
+          toast('warning', 'Comando Cancelado', 'A execução do comando foi interrompida com segurança.');
+          return { success: false, cancelled: true };
+        }
+
+        if (runRes && runRes.timedOut) {
+          if (statusContainer) {
+            statusContainer.className = 'ai-cmd-status-bar-container error';
+            if (dot) dot.className = 'ai-cmd-status-dot error';
+            if (label) label.textContent = 'Tempo limite excedido (timeout de segurança)';
+            if (percentage) percentage.textContent = 'Timeout';
+            if (fill) fill.style.width = '100%';
+            if (logEl) {
+              logEl.style.display = 'block';
+              logEl.className = 'ai-cmd-status-log error';
+              logEl.textContent = (runRes.output || 'O comando excedeu o tempo limite seguro e foi interrompido para evitar travamentos.').trim();
+            }
+          }
+          if (execBtn) {
+            execBtn.innerHTML = '<i data-lucide="clock" style="width:13px;height:13px;color:#f87171"></i> Timeout';
+            createLucideIcons(execBtn);
+          }
+          toast('error', 'Tempo Limite Excedido', 'O comando demorou mais que o esperado e foi finalizado por segurança.');
+          return { success: false, timedOut: true };
+        }
 
         if (runRes && runRes.success) {
           if (statusContainer) {
@@ -568,8 +635,10 @@ export function initAiDiagnosticsTab(ctx = {}) {
         clearInterval(simInterval);
         if (removeProgressListener) removeProgressListener();
 
+        row.dataset.running = 'false';
         if (execBtn) {
           execBtn.disabled = false;
+          execBtn.className = 'ai-cmd-btn btn-exec';
           execBtn.innerHTML = '<i data-lucide="alert-triangle" style="width:13px;height:13px;color:#f87171"></i> Falhou';
           createLucideIcons(execBtn);
         }
@@ -626,7 +695,10 @@ export function initAiDiagnosticsTab(ctx = {}) {
         const rows = dashboardContainer.querySelectorAll('.ai-cmd-row');
 
         let successCount = 0;
+        let batchCancelled = false;
+
         for (let i = 0; i < comandos.length; i++) {
+          if (batchCancelled) break;
           const item = comandos[i];
           const row = rows[i];
           batchExecBtn.innerHTML = `<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite"></i> Executando [${i + 1}/${comandos.length}]...`;
@@ -634,15 +706,25 @@ export function initAiDiagnosticsTab(ctx = {}) {
 
           toast('info', `Executando [${i + 1}/${comandos.length}]`, item.descricao || item.comando);
           const res = await executeSingleCommand(row, item.comando);
+          if (res && res.cancelled) {
+            batchCancelled = true;
+            break;
+          }
           if (res && res.success) {
             successCount++;
           }
         }
 
         batchExecBtn.disabled = false;
-        batchExecBtn.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;color:#34d399"></i> Todos Concluídos';
-        createLucideIcons(batchExecBtn);
-        toast('success', 'Plano Concluído', `${successCount} de ${comandos.length} comando(s) executado(s) com sucesso.`);
+        if (batchCancelled) {
+          batchExecBtn.innerHTML = '<i data-lucide="pause-circle" style="width:14px;height:14px;color:#fbbf24"></i> Sequência Interrompida';
+          createLucideIcons(batchExecBtn);
+          toast('warning', 'Sequência Interrompida', 'A execução em lote foi pausada pelo usuário.');
+        } else {
+          batchExecBtn.innerHTML = '<i data-lucide="check-check" style="width:14px;height:14px;color:#34d399"></i> Todos Concluídos';
+          createLucideIcons(batchExecBtn);
+          toast('success', 'Plano Concluído', `${successCount} de ${comandos.length} comando(s) executado(s) com sucesso.`);
+        }
       });
     }
 

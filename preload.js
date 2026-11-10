@@ -1,13 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('api', {
-  runCommand: (command) => ipcRenderer.invoke('run-command', command),
+  runCommand: (command, options = {}) => ipcRenderer.invoke('run-command', command, null, options),
   listDeletableUsers: () => ipcRenderer.invoke('list-deletable-users'),
   deleteLocalUser: (userName) => ipcRenderer.invoke('delete-local-user', userName),
   cancelCommand: () => ipcRenderer.send('cancel-command'),
   onSystemStats: (callback) => ipcRenderer.on('system-stats', (_, data) => callback(data)),
   getBlockedLocalUsers: () => ipcRenderer.invoke('get-blocked-local-users'),
-  runTrackedCommand: (command, trackingId) => ipcRenderer.invoke('run-command', command, trackingId),
+  runTrackedCommand: (command, trackingId, options = {}) => ipcRenderer.invoke('run-command', command, trackingId, options),
   onCommandProgress: (callback) => {
     const listener = (_, data) => callback(data);
     ipcRenderer.on('command-progress', listener);

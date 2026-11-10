@@ -416,11 +416,82 @@ function sendCommandProgress(trackingId, payload) {
   mainWindow.webContents.send('command-progress', { id: trackingId, ...payload })
 }
 
+// Detecta se o comando deve ser executado no PowerShell
+function isPowerShellCommand(cmd, explicitType) {
+  if (explicitType === 'powershell') return true
+  if (explicitType === 'cmd') return false
+
+  const trimmed = (cmd || '').trim()
+
+  // Se inicia explicitamente com powershell
+  if (/^powershell(\.exe)?\b/i.test(trimmed)) return true
+
+  // Verb-Noun cmdlets nativos do PowerShell
+  if (/^(Get|Set|Start|Stop|Restart|Enable|Disable|New|Remove|Test|Clear|Install|Uninstall|Update|Invoke|Select|Where|ForEach|Checkpoint|Reset|Register|Unregister)-[a-zA-Z0-9]+/i.test(trimmed)) {
+    return true
+  }
+
+  // Cmdlets comuns ou manipuladores do PowerShell
+  if (/\b(Get-AppxPackage|Remove-AppxPackage|Get-Service|Restart-Service|Stop-Service|Start-Service|Get-Process|Stop-Process|Clear-DnsClientCache|Get-NetAdapter|Reset-NetAdapter|Set-ItemProperty|Get-ItemProperty|Get-CimInstance|Get-WmiObject|Get-LocalUser|Remove-LocalUser)\b/i.test(trimmed)) {
+    return true
+  }
+
+  // Pipelines e operadores do PowerShell
+  if (/\|\s*(Where-Object|\?|ForEach-Object|%|Select-Object|Out-Null|Out-String|Out-File|Export-Csv)\b/i.test(trimmed)) {
+    return true
+  }
+
+  // Variáveis de ambiente PowerShell ou booleanos
+  if (/\$(env:|[a-zA-Z_]\w*|true|false)\b/i.test(trimmed)) {
+    return true
+  }
+
+  return false
+}
+
+// Higieniza comandos para garantir execução segura, sem travamentos de stdin e sem blocos inválidos
+function sanitizeCommandToRun(rawCmd) {
+  if (!rawCmd || typeof rawCmd !== 'string') return ''
+
+  let cleaned = rawCmd.trim()
+
+  // Remove blocos de código markdown como ```powershell ou ```cmd ou ```
+  cleaned = cleaned.replace(/^```[a-zA-Z0-9_-]*\r?\n?/, '').replace(/\r?\n?```$/, '').trim()
+
+  // Remove comandos 'pause' que travam a execução esperando teclado
+  cleaned = cleaned.replace(/^\s*pause\s*(&+|\|+|;)?\s*/gi, '')
+  cleaned = cleaned.replace(/\s*(&+|\|+|;)\s*pause\s*$/gi, '')
+  cleaned = cleaned.replace(/\s*(&+|\|+|;)\s*pause\s*(&+|\|+|;)\s*/gi, ' $1 ')
+  cleaned = cleaned.replace(/(?:\r?\n)\s*pause\s*(?:\r?\n|$)/gi, '\n')
+  cleaned = cleaned.trim()
+
+  // Auto-adiciona /f para reg add e reg delete para evitar prompt interativo de confirmação
+  cleaned = cleaned.replace(/\b(reg\s+(add|delete)\b[^&|\r\n]+)/gi, (match) => {
+    if (!/\s\/[fy]\b/i.test(match)) {
+      return match + ' /f'
+    }
+    return match
+  })
+
+  // Auto-adiciona /f /q para del ou erase sem flag silenciosa
+  cleaned = cleaned.replace(/\b(del|erase)\b(?!\s*\/[a-z]*[fq])/gi, '$1 /f /q')
+
+  // Auto-adiciona flags não-interativas para winget
+  if (/\bwinget\b/i.test(cleaned) && !cleaned.includes('--disable-interactivity')) {
+    cleaned += ' --accept-source-agreements --accept-package-agreements --disable-interactivity'
+  }
+
+  return cleaned
+}
+
 // Function to handle running commands
-ipcMain.handle('run-command', async (_, command, trackingId = null) => {
+ipcMain.handle('run-command', async (_, command, trackingId = null, options = {}) => {
+  const explicitType = (options && options.type) ? String(options.type).toLowerCase() : null
+  let cmdToRun = sanitizeCommandToRun(command)
+
   // Tratamento especial para comandos que abrem configurações ou URLs externas
-  if (command.startsWith('start ms-settings:')) {
-    const url = command.replace('start ', '').trim()
+  if (cmdToRun.startsWith('start ms-settings:')) {
+    const url = cmdToRun.replace('start ', '').trim()
     try {
       await shell.openExternal(url)
       return { success: true, output: `Configurações abertas: ${url}` }
@@ -430,7 +501,7 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
   }
 
   // Abre a janela nativa da Limpeza de Disco do Windows (cleanmgr.exe)
-  if (/^(start\s+)?cleanmgr(\.exe)?/i.test(command.trim())) {
+  if (/^(start\s+)?cleanmgr(\.exe)?/i.test(cmdToRun.trim())) {
     const systemRoot = process.env.SystemRoot || 'C:\\Windows'
     const systemDir = (process.arch === 'ia32' && process.env.PROCESSOR_ARCHITEW6432) ? 'Sysnative' : 'System32'
     const cleanmgrPath = path.join(systemRoot, systemDir, 'cleanmgr.exe')
@@ -452,7 +523,7 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
   }
 
   // Abre a janela nativa de Informações do Sistema do Windows sem passar pelo cmd
-  if (/^start\s+msinfo32(\.exe)?$/i.test(command.trim())) {
+  if (/^start\s+msinfo32(\.exe)?$/i.test(cmdToRun.trim())) {
     const systemRoot = process.env.SystemRoot || 'C:\\Windows'
     const systemDir = (process.arch === 'ia32' && process.env.PROCESSOR_ARCHITEW6432) ? 'Sysnative' : 'System32'
     const msinfoPath = path.join(systemRoot, systemDir, 'msinfo32.exe')
@@ -477,7 +548,7 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
   }
 
   // Abre a janela nativa do Diagnóstico de Memória do Windows (mdsched.exe)
-  if (/^start\s+mdsched(\.exe)?$/i.test(command.trim())) {
+  if (/^start\s+mdsched(\.exe)?$/i.test(cmdToRun.trim())) {
     const systemRoot = process.env.SystemRoot || 'C:\\Windows'
     const systemDir = (process.arch === 'ia32' && process.env.PROCESSOR_ARCHITEW6432) ? 'Sysnative' : 'System32'
     const mdschedPath = path.join(systemRoot, systemDir, 'MdSched.exe')
@@ -499,7 +570,7 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
   }
 
   // Abre a janela nativa de Remoção de Drivers de Impressora (Propriedades do Servidor de Impressão)
-  if (/^(start\s+)?printui(\.exe)?\s+\/s\s+\/t2/i.test(command.trim())) {
+  if (/^(start\s+)?printui(\.exe)?\s+\/s\s+\/t2/i.test(cmdToRun.trim())) {
     const systemRoot = process.env.SystemRoot || 'C:\\Windows'
     const systemDir = (process.arch === 'ia32' && process.env.PROCESSOR_ARCHITEW6432) ? 'Sysnative' : 'System32'
     const printuiPath = path.join(systemRoot, systemDir, 'printui.exe')
@@ -521,19 +592,16 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
   }
 
   // Garante acesso aos binários 64-bit se o app for 32-bit (Sysnative)
-  let cmdToRun = command
   if (process.arch === 'ia32' && process.env.PROCESSOR_ARCHITEW6432) {
-    cmdToRun = command.replace(/\b(sfc|dism|chkdsk)\b/gi, 'C:\\Windows\\Sysnative\\$1.exe')
+    cmdToRun = cmdToRun.replace(/\b(sfc|dism|chkdsk)\b/gi, 'C:\\Windows\\Sysnative\\$1.exe')
   }
 
   // Automatiza resposta para o CHKDSK se ele solicitar agendamento
-  if (cmdToRun.toLowerCase().includes('chkdsk')) {
+  if (cmdToRun.toLowerCase().includes('chkdsk') && !cmdToRun.includes('echo S')) {
     cmdToRun = `echo S | ${cmdToRun}`
   }
 
   // Special handling for 'net user' command to ensure correct encoding.
-  // Running cmd.exe /c "net user" inside PowerShell to capture its output reliably in UTF-8.
-  // This helps prevent character encoding issues (e.g., "usuário" appearing as "usurio").
   if (cmdToRun.toLowerCase().startsWith('net user')) {
     const psScript = `
       # Se for apenas o comando de listagem geral, usamos PowerShell nativo para evitar erros de encoding e cabeçalho
@@ -556,24 +624,62 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
 
   return new Promise((resolve) => {
     isCancelling = false
-    let stdoutBuffer = ''
-    let stderrBuffer = ''
-    // Buffer binário com decodificação inteligente de caracteres Windows (CP850 / UTF-8)
-    currentProcess = exec(`chcp 65001 > nul && ${cmdToRun}`, { shell: 'cmd.exe', encoding: 'buffer', maxBuffer: 1024 * 1024 * 10 }, (error, stdoutBuf, stderrBuf) => {
-      const cancelled = isCancelling || (error && error.killed)
-      isCancelling = false
-      currentProcess = null
-      sendCommandProgress(trackingId, { done: true, percent: cancelled || error ? null : 100 })
-      const outText = decodeTerminalOutput(stdoutBuf || stdoutBuffer)
-      const errText = decodeTerminalOutput(stderrBuf || stderrBuffer)
-      if (cancelled) resolve({ success: false, output: outText || 'Operação cancelada pelo usuário.', cancelled: true, rawOutput: outText })
-      else if (error) resolve({ success: false, output: errText || outText || error.message })
-      else resolve({ success: true, output: outText.replace(/^\ufeff/, '').replace(/\0/g, '') })
-    })
+    const usePowerShell = isPowerShellCommand(cmdToRun, explicitType)
+    let childProcess = null
+
+    try {
+      if (usePowerShell) {
+        const normalizedScript = `
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$ProgressPreference = 'SilentlyContinue'
+$ConfirmPreference = 'None'
+$ErrorActionPreference = 'Continue'
+${cmdToRun}
+`
+        const encoded = Buffer.from(normalizedScript, 'utf16le').toString('base64')
+        childProcess = spawn('powershell.exe', [
+          '-NoProfile',
+          '-NonInteractive',
+          '-ExecutionPolicy', 'Bypass',
+          '-EncodedCommand', encoded
+        ], {
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe']
+        })
+      } else {
+        childProcess = spawn('cmd.exe', [
+          '/c',
+          `chcp 65001 > nul && ${cmdToRun}`
+        ], {
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe']
+        })
+      }
+    } catch (spawnErr) {
+      return resolve({ success: false, output: `Falha ao instanciar o processo de execução: ${spawnErr.message}` })
+    }
+
+    currentProcess = childProcess
+    let stdoutChunks = []
+    let stderrChunks = []
+
+    const isHeavy = /\b(dism|sfc|chkdsk)\b/i.test(cmdToRun)
+    const timeoutMs = isHeavy ? 600000 : 90000 // 10 min para DISM/SFC, 90s para os demais comandos
+    let isTimedOut = false
+
+    const timeoutTimer = setTimeout(() => {
+      isTimedOut = true
+      if (currentProcess && currentProcess.pid) {
+        try {
+          exec(`taskkill /pid ${currentProcess.pid} /T /F`)
+        } catch (_) {}
+      }
+    }, timeoutMs)
 
     currentProcess.stdout?.on('data', chunk => {
+      stdoutChunks.push(chunk)
       const textChunk = decodeTerminalOutput(chunk)
-      stdoutBuffer += textChunk
       const progress = extractCommandProgress(textChunk)
       sendCommandProgress(trackingId, {
         percent: progress.percent,
@@ -584,8 +690,8 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
     })
 
     currentProcess.stderr?.on('data', chunk => {
+      stderrChunks.push(chunk)
       const textChunk = decodeTerminalOutput(chunk)
-      stderrBuffer += textChunk
       const progress = extractCommandProgress(textChunk)
       sendCommandProgress(trackingId, {
         percent: progress.percent,
@@ -593,6 +699,41 @@ ipcMain.handle('run-command', async (_, command, trackingId = null) => {
         chunk: textChunk,
         stream: 'stderr'
       })
+    })
+
+    currentProcess.on('error', (err) => {
+      clearTimeout(timeoutTimer)
+      currentProcess = null
+      sendCommandProgress(trackingId, { done: true, percent: null })
+      resolve({ success: false, output: `Erro na execução do processo: ${err.message}` })
+    })
+
+    currentProcess.on('close', (code) => {
+      clearTimeout(timeoutTimer)
+      const cancelled = isCancelling
+      isCancelling = false
+      currentProcess = null
+
+      const stdoutBuf = Buffer.concat(stdoutChunks)
+      const stderrBuf = Buffer.concat(stderrChunks)
+      const outText = decodeTerminalOutput(stdoutBuf).replace(/^\ufeff/, '').replace(/\0/g, '').trim()
+      const errText = decodeTerminalOutput(stderrBuf).replace(/^\ufeff/, '').replace(/\0/g, '').trim()
+
+      sendCommandProgress(trackingId, { done: true, percent: cancelled || isTimedOut || code !== 0 ? null : 100 })
+
+      if (cancelled) {
+        resolve({ success: false, output: outText || 'Operação cancelada pelo usuário.', cancelled: true, rawOutput: outText })
+      } else if (isTimedOut) {
+        resolve({
+          success: false,
+          output: (outText ? outText + '\n\n' : '') + 'Tempo limite de execução excedido (o comando demorou mais que o esperado e foi interrompido com segurança).',
+          timedOut: true
+        })
+      } else if (code !== 0) {
+        resolve({ success: false, output: errText || outText || `Comando finalizado com código de erro ${code}.` })
+      } else {
+        resolve({ success: true, output: outText || errText || 'Comando executado com êxito.' })
+      }
     })
   })
 })
