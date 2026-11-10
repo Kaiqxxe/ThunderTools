@@ -443,7 +443,7 @@ DIRETRIZES OBRIGATÓRIAS PARA OS COMANDOS SUGERIDOS:
 2. NUNCA INVENTE cmdlets fictícios no PowerShell (ex: 'Clear-WindowsUpdateCache', 'Reset-PrintSpooler', 'Flush-Dns' NÃO EXISTEM).
    - Para redefinir o Windows Update, use comandos reais do CMD (net stop wuauserv && net stop bits && del /f /q /s %windir%\\SoftwareDistribution\\Download\\* && net start wuauserv && net start bits).
    - Para limpar cache DNS, use 'ipconfig /flushdns' (tipo: 'cmd') ou 'Clear-DnsClientCache' (tipo: 'powershell').
-   - Para reparar arquivos de sistema e imagem, use 'sfc /scannow' e 'DISM /Online /Cleanup-Image /RestoreHealth' (tipo: 'cmd').
+   - Para reparar arquivos de sistema e integridade: Coloque SEMPRE 'sfc /scannow' em PRIMEIRO LUGAR, pois ele utiliza o repositório local protegido (WinSxS) sem depender do serviço Windows Update. Se for sugerir reparo de imagem com DISM, sugira 'DISM /Online /Cleanup-Image /StartComponentCleanup' antes de 'DISM /Online /Cleanup-Image /RestoreHealth' para prevenir o erro 0x800f081f (origem não encontrada).
    - Para reiniciar spooler de impressão, use 'net stop spooler && del /q /f /s %systemroot%\\System32\\Spool\\Printers\\* && net start spooler' (tipo: 'cmd').
 3. EXECUÇÃO 100% NÃO-INTERATIVA (NUNCA solicite confirmação interativa ao usuário):
    - No CMD: sempre inclua '/f', '/q' ou '/y' (ex: reg add ... /f, reg delete ... /f, del /f /q ...). NUNCA utilize 'pause'.
